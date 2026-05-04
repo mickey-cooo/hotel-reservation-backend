@@ -4,3 +4,18 @@ export enum CommonStatus {
   PENDING = 'pending',
   DELETED = 'deleted',
 }
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export enum PaymentMethod {
+  CREDIT_CARD = 'credit_card',
+  DEBIT_CARD = 'debit_card',
+  PAYPAL = 'paypal',
+  BANK_TRANSFER = 'bank_transfer',
+  CASH = 'cash',
+}

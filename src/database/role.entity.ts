@@ -1,5 +1,6 @@
-import { Column, DeleteDateColumn, Entity } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, OneToMany } from 'typeorm';
 import { TemplateEntity } from './template.entity';
+import { UserEntity } from './user.entity';
 
 @Entity('role')
 export class RoleEntity extends TemplateEntity {
@@ -14,4 +15,7 @@ export class RoleEntity extends TemplateEntity {
 
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deletedAt: Date;
+
+  @OneToMany(() => UserEntity, (user) => user.role)
+  users?: UserEntity[];
 }
