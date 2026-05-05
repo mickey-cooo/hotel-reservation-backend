@@ -1,4 +1,4 @@
-import { Column, Entity, OneToOne } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, OneToOne } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { UserEntity } from './user.entity';
 import { HotelEntity } from './hotel.entity';
@@ -20,8 +20,11 @@ export class AddressEntity extends TemplateEntity {
   @Column({ type: 'varchar', nullable: true })
   postalCode: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  detail: string;
+  @Column({ type: 'jsonb', nullable: true })
+  detail?: string;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt: Date;
 
   @OneToOne(() => UserEntity, (user) => user.address)
   user?: UserEntity;

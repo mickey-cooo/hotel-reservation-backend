@@ -5,6 +5,7 @@ import { modules } from './modules/modules';
 import { RoleModule } from './role/role.module';
 import { HotelModule } from './hotel/hotel.module';
 import { HotelRoomModule } from './hotel-room/hotel-room.module';
+import { AddressModule } from './address/address.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { HotelRoomModule } from './hotel-room/hotel-room.module';
     RoleModule,
     HotelModule,
     HotelRoomModule,
+    AddressModule,
   ],
 })
 export class AppModule {}
