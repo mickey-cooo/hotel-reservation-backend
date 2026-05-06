@@ -7,7 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AddressEntity } from 'src/database/address.entity';
 import { Repository } from 'typeorm';
 import { CreateAddressBodyDto } from './dto/create-address.dto';
-import { AddressBodyParamsDto } from './dto/address-params.dto';
+import {
+  AddressBodyParamsDto,
+  AddressParamDto,
+} from './dto/address-params.dto';
 import { AddressInterface } from './interface/address.interface';
 import { UpdateAddressBodyDto } from './dto/update-address.dto';
 
@@ -50,7 +53,7 @@ export class AddressService {
     }
   }
 
-  async findOneAddress(param: { id: string }): Promise<{
+  async findOneAddress(param: AddressParamDto): Promise<{
     message: string;
     data: AddressInterface;
   }> {
@@ -98,7 +101,7 @@ export class AddressService {
   }
 
   async updateAddress(
-    param: { id: string },
+    param: AddressParamDto,
     body: UpdateAddressBodyDto,
   ): Promise<{
     message: string;
@@ -142,7 +145,7 @@ export class AddressService {
     }
   }
 
-  async deleteAddress(param: { id: string }): Promise<{
+  async deleteAddress(param: AddressParamDto): Promise<{
     message: string;
     data: AddressInterface;
   }> {

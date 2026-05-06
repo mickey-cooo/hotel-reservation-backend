@@ -6,22 +6,21 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelEntity } from '../database/hotel.entity';
 import { Repository } from 'typeorm';
-import { AddressEntity } from '../database/address.entity';
 import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus } from '../enum/common.status';
 import { ParamHotelDto } from './dto/hotel-params.dto';
+import { AddressService } from 'src/address/address.service';
 @Injectable()
 export class HotelService {
   constructor(
     @InjectRepository(HotelEntity)
     private readonly hotelRepository: Repository<HotelEntity>,
-    @InjectRepository(AddressEntity)
-    private readonly addressRepository: Repository<AddressEntity>,
     @InjectRepository(HotelRoomEntity)
     private readonly hotelRoomRepository: Repository<HotelRoomEntity>,
     private readonly hotelRoomService: HotelRoomService,
+    private readonly addressService: AddressService,
   ) {}
 
   async createHotel(body: CreateHotelBodyDto) {
