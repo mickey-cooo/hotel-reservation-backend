@@ -15,11 +15,11 @@ export class GeographyEntity {
   geo_name: string;
 
   @OneToMany(() => ProvinceEntity, (province) => province.geography)
-  provinces?: ProvinceEntity[];
+  provinces: ProvinceEntity[];
 
   @OneToMany(() => DistrictEntity, (district) => district.geography)
-  districts?: DistrictEntity[];
+  districts: DistrictEntity[];
 
   @OneToMany(() => AmphurEntity, (amphur) => amphur.geography)
-  amphurs?: AmphurEntity[];
+  amphurs: AmphurEntity[];
 }

@@ -29,11 +29,11 @@ export class ProvinceEntity {
 
   @ManyToOne(() => GeographyEntity, (geography) => geography.provinces)
   @JoinColumn({ name: 'geo_id' })
-  geography?: GeographyEntity;
+  geography: GeographyEntity;
 
   @OneToMany(() => AmphurEntity, (amphur) => amphur.province)
-  amphurs?: AmphurEntity[];
+  amphurs: AmphurEntity[];
 
   @OneToMany(() => DistrictEntity, (district) => district.province)
-  districts?: DistrictEntity[];
+  districts: DistrictEntity[];
 }

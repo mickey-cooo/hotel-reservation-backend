@@ -12,6 +12,9 @@ import { CreateAddressBodyDto } from './dto/create-address.dto';
 import {
   AddressBodyParamsDto,
   AddressParamDto,
+  DistrictParamDto,
+  GeographyBodyParamsDto,
+  ProvinceParamDto,
 } from './dto/address-params.dto';
 import { UpdateAddressBodyDto } from './dto/update-address.dto';
 
@@ -32,6 +35,21 @@ export class AddressController {
   @Get('/list')
   async findAllAddress(@Body() body: AddressBodyParamsDto) {
     return await this.addressService.findAllAddress(body);
+  }
+
+  @Get('/geography/list')
+  async findAllGeography(@Body() body: GeographyBodyParamsDto) {
+    return await this.addressService.findAllGeography(body);
+  }
+
+  @Get('/province/:id')
+  async findOneProvince(@Param() param: ProvinceParamDto) {
+    return await this.addressService.findOneProvince(param);
+  }
+
+  @Get('/district/province/:geo_id/:province_id')
+  async findDistrictByProvince(@Param() param: DistrictParamDto) {
+    return await this.addressService.findDistrictByProvince(param);
   }
 
   @Patch('/update/:id')

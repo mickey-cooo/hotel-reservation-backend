@@ -44,7 +44,7 @@ export class UserEntity extends TemplateEntity {
 
   @ManyToOne(() => RoleEntity, (role) => role.users)
   @JoinColumn({ name: 'role_id' })
-  role?: RoleEntity;
+  role: RoleEntity;
 
   @OneToMany(() => HotelReviewEntity, (review) => review.user)
   reviews?: HotelReviewEntity[];

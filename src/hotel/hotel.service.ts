@@ -5,13 +5,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelEntity } from '../database/hotel.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus } from '../enum/common.status';
-import { ParamHotelDto } from './dto/hotel-params.dto';
+import { BodyHotelIdsDto, ParamHotelDto } from './dto/hotel-params.dto';
 import { AddressService } from 'src/address/address.service';
+import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
 @Injectable()
 export class HotelService {
   constructor(
@@ -21,6 +22,7 @@ export class HotelService {
     private readonly hotelRoomRepository: Repository<HotelRoomEntity>,
     private readonly hotelRoomService: HotelRoomService,
     private readonly addressService: AddressService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async createHotel(body: CreateHotelBodyDto) {
@@ -119,6 +121,154 @@ export class HotelService {
       };
     } catch (error) {
       throw new Error(error);
+    }
+  }
+
+  async findAllHotel(body: BodyHotelIdsDto) {
+    try {
+      const hotels = await this.hotelRepository
+        .createQueryBuilder('h')
+        .whereInIds(body.ids)
+        .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+        .getRawMany();
+
+      if (!hotels) {
+        throw new NotFoundException('Hotels not found');
+      }
+
+      return {
+        message: 'Hotels found successfully',
+        data: hotels,
+      };
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async updateHotel(param: ParamHotelDto, body: UpdateHotelBodyDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const currentHotel = await this.hotelRepository
+        .createQueryBuilder('h')
+        .innerJoinAndSelect('h.rooms', 'r')
+        .where('h.id = :id', { id: param.id })
+        .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+        .getOne();
+
+      if (!currentHotel) {
+        throw new NotFoundException('Hotel not found');
+      }
+
+      const updatedHotel = await this.hotelRepository
+        .createQueryBuilder()
+        .update(HotelEntity)
+        .set({
+          ...body,
+          address: {
+            country: body.addressDetail.country,
+            province: body.addressDetail.province,
+            district: body.addressDetail.district,
+            subDistrict: body.addressDetail.subDistrict,
+            postalCode: body.addressDetail.postalCode,
+            detail: body.addressDetail.detail,
+          },
+        })
+        .where('id = :id', { id: currentHotel.id })
+        .returning('*')
+        .execute();
+
+      if (!updatedHotel) {
+        throw new BadRequestException('Failed to update hotel');
+      }
+
+      if (body.rooms?.length) {
+        const roomIds = currentHotel.rooms?.map((item) => item.id) ?? [];
+        const updatedHotelRooms = await Promise.all(
+          body.rooms.map((room, index) =>
+            this.hotelRoomService.updateHotelRoom({ id: roomIds[index] }, room),
+          ),
+        );
+        if (!updatedHotelRooms) {
+          throw new BadRequestException('Failed to update hotel rooms');
+        }
+
+        return {
+          message: 'Hotel updated successfully',
+          data: {
+            hotel: updatedHotel.raw[0],
+            rooms: updatedHotelRooms,
+          },
+        };
+      }
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteHotel(param: ParamHotelDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const currentHotel = await this.hotelRepository
+        .createQueryBuilder('h')
+        .where('h.id = :id', { id: param.id })
+        .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+        .getOne();
+
+      if (!currentHotel) {
+        throw new NotFoundException('Hotel not found');
+      }
+
+      const deletedHotel = await this.hotelRepository
+        .createQueryBuilder()
+        .update(HotelEntity)
+        .set({
+          status: CommonStatus.DELETED,
+        })
+        .where('id = :id', { id: currentHotel.id })
+        .returning('*')
+        .execute();
+      if (!deletedHotel) {
+        throw new BadRequestException('Failed to delete hotel');
+      }
+
+      if (currentHotel.rooms?.length) {
+        const roomIds = currentHotel.rooms?.map((item) => item.id) ?? [];
+
+        const deletedHotelRooms = await Promise.all(
+          roomIds.map((roomId) =>
+            this.hotelRoomService.deleteHotelRoom({ id: roomId }),
+          ),
+        );
+
+        if (!deletedHotelRooms) {
+          throw new BadRequestException('Failed to delete hotel rooms');
+        }
+
+        return {
+          message: 'Hotel deleted successfully',
+          data: {
+            hotel: deletedHotel.raw[0],
+            rooms: deletedHotelRooms,
+          },
+        };
+      }
+
+      return {
+        message: 'Hotel deleted successfully',
+        data: null,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 }

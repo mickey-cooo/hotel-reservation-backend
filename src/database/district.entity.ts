@@ -28,13 +28,13 @@ export class DistrictEntity {
 
   @ManyToOne(() => AmphurEntity, (amphur) => amphur.districts)
   @JoinColumn({ name: 'amphur_id' })
-  amphur?: AmphurEntity;
+  amphur: AmphurEntity;
 
   @ManyToOne(() => ProvinceEntity, (province) => province.districts)
   @JoinColumn({ name: 'province_id' })
-  province?: ProvinceEntity;
+  province: ProvinceEntity;
 
   @ManyToOne(() => GeographyEntity, (geography) => geography.districts)
   @JoinColumn({ name: 'geo_id' })
-  geography?: GeographyEntity;
+  geography: GeographyEntity;
 }

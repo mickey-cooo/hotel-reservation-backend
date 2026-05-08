@@ -35,12 +35,12 @@ export class AmphurEntity {
 
   @ManyToOne(() => GeographyEntity, (geography) => geography.amphurs)
   @JoinColumn({ name: 'geo_id' })
-  geography?: GeographyEntity;
+  geography: GeographyEntity;
 
   @ManyToOne(() => ProvinceEntity, (province) => province.amphurs)
   @JoinColumn({ name: 'province_id' })
-  province?: ProvinceEntity;
+  province: ProvinceEntity;
 
   @OneToMany(() => DistrictEntity, (district) => district.amphur)
-  districts?: DistrictEntity[];
+  districts: DistrictEntity[];
 }

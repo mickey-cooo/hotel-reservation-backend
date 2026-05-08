@@ -10,15 +10,37 @@ import { CreateAddressBodyDto } from './dto/create-address.dto';
 import {
   AddressBodyParamsDto,
   AddressParamDto,
+  AmphurParamDto,
+  DistrictParamDto,
+  GeographyBodyParamsDto,
+  ProvinceParamDto,
 } from './dto/address-params.dto';
-import { AddressInterface } from './interface/address.interface';
+import {
+  AddressInterface,
+  AmphurInterface,
+  DistrictInterface,
+  GeographyInterface,
+  ProvinceInterface,
+} from './interface/address.interface';
 import { UpdateAddressBodyDto } from './dto/update-address.dto';
+import { GeographyEntity } from '../database/geography.entity';
+import { ProvinceEntity } from '../database/province.entity';
+import { DistrictEntity } from '../database/district.entity';
+import { AmphurEntity } from '../database/amhur.entity';
 
 @Injectable()
 export class AddressService {
   constructor(
     @InjectRepository(AddressEntity)
     private readonly addressRepository: Repository<AddressEntity>,
+    @InjectRepository(GeographyEntity)
+    private readonly geographyRepository: Repository<GeographyEntity>,
+    @InjectRepository(ProvinceEntity)
+    private readonly provinceRepository: Repository<ProvinceEntity>,
+    @InjectRepository(DistrictEntity)
+    private readonly districtRepository: Repository<DistrictEntity>,
+    @InjectRepository(AmphurEntity)
+    private readonly amphurRepository: Repository<AmphurEntity>,
   ) {}
 
   async createAddress(body: CreateAddressBodyDto): Promise<{
@@ -95,6 +117,119 @@ export class AddressService {
         message: 'Address found successfully',
         data: currentAddress,
       };
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async findAllGeography(
+    body: GeographyBodyParamsDto,
+  ): Promise<GeographyInterface[]> {
+    try {
+      const currentGeography = await this.geographyRepository
+        .createQueryBuilder('g')
+        .whereInIds(body.geo_ids)
+        .getRawMany();
+
+      if (!currentGeography) {
+        throw new NotFoundException('Geography not found');
+      }
+
+      return currentGeography;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async findOneProvince(param: ProvinceParamDto): Promise<ProvinceInterface> {
+    try {
+      const currentProvince = await this.provinceRepository
+        .createQueryBuilder('p')
+        .where('p.province_id = :province_id', {
+          province_id: param.id,
+        })
+        .innerJoinAndSelect('p.geography', 'g')
+        .select([
+          'p.province_id as "province_id"',
+          'p.province_code as "province_code"',
+          'p.province_name as "province_name"',
+          'g.geo_id as "geo_id"',
+          'g.geo_name as "geo_name"',
+        ])
+        .getOne();
+
+      if (!currentProvince) {
+        throw new NotFoundException('Province not found');
+      }
+
+      return currentProvince;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async findDistrictByProvince(
+    param: DistrictParamDto,
+  ): Promise<DistrictInterface> {
+    try {
+      const currentDistrict = await this.districtRepository
+        .createQueryBuilder('d')
+        .where('d.district_id = :district_id', {
+          district_id: param.district_id,
+        })
+        .andWhere('d.geo_id = :geo_id', { geo_id: param.geo_id })
+        .andWhere('d.province_id = :province_id', {
+          province_id: param.province_id,
+        })
+        .innerJoinAndSelect('d.province', 'p')
+        .innerJoinAndSelect('d.geography', 'g')
+        .select([
+          'd.district_id as "district_id"',
+          'd.district_code as "district_code"',
+          'd.district_name as "district_name"',
+          'p.province_id as "province_id"',
+          'p.province_code as "province_code"',
+          'p.province_name as "province_name"',
+          'g.geo_id as "geo_id"',
+          'g.geo_name as "geo_name"',
+        ])
+        .getOne();
+
+      if (!currentDistrict) {
+        throw new NotFoundException('District not found');
+      }
+
+      return currentDistrict;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async findAmphurByProvince(param: AmphurParamDto): Promise<AmphurInterface> {
+    try {
+      const currentAmphur = await this.amphurRepository
+        .createQueryBuilder('a')
+        .where('a.amphur_id = :amphur_id', { amphur_id: param.province_id })
+        .innerJoinAndSelect('a.geography', 'g')
+        .innerJoinAndSelect('a.province', 'p')
+        .select([
+          'a.amphur_id as "amphur_id"',
+          'a.amphur_code as "amphur_code"',
+          'a.amphur_name as "amphur_name"',
+          'a.postcode as "postcode"',
+          'p.province_id as "province_id"',
+          'p.province_code as "province_code"',
+          'p.province_name as "province_name"',
+          'g.geo_id as "geo_id"',
+          'g.geo_name as "geo_name"',
+        ])
+        .getOne();
+
+      if (!currentAmphur) {
+        throw new NotFoundException('Amphur not found');
+      }
+
+      return currentAmphur;
     } catch (error) {
       throw new Error(error);
     }
