@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { RoleEntity } from '../database/role.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateBodyRoleDto } from './dto/create-role.dto';
 import { BodyRoleIdsDto, RoleParamDto } from './dto/role-param.dto';
@@ -13,6 +13,7 @@ import { UpdateBodyRoleDto } from './dto/update-role.dto';
 @Injectable()
 export class RoleService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
   ) {}
@@ -87,6 +88,9 @@ export class RoleService {
   }
 
   async updateRole(param: RoleParamDto, body: UpdateBodyRoleDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentRole = await this.roleRepository
         .createQueryBuilder('r')
@@ -119,11 +123,17 @@ export class RoleService {
         data: updatedRole,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async deleteRole(param: RoleParamDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentRole = await this.roleRepository
         .createQueryBuilder('r')
@@ -154,7 +164,10 @@ export class RoleService {
         data: null,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 }

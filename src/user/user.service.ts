@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {
   BadRequestException,
   Injectable,
@@ -18,6 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class UserService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(AddressEntity)
@@ -126,6 +127,9 @@ export class UserService {
   }
 
   async updateUser(param: ParamUserDto, body: UpdateBodyUserDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentUser = await this.userRepository
         .createQueryBuilder('u')
@@ -218,11 +222,17 @@ export class UserService {
         data: updatedUser,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async deleteUser(param: ParamUserDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentUser = await this.userRepository
         .createQueryBuilder('u')
@@ -253,7 +263,10 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
