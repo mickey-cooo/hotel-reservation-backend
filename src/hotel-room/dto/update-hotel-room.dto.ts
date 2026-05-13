@@ -6,8 +6,8 @@ import {
   IsNumber,
   IsString,
 } from 'class-validator';
-import { HotelRoomType, RoomPolicyType } from 'src/enum/hotel-room.status';
-import { HotelRoomAmenities } from 'src/enum/hotel-room.status';
+import { HotelRoomType, RoomPolicyType } from '../../enum/hotel-room.status';
+import { HotelRoomAmenities } from '../../enum/hotel-room.status';
 
 export class UpdateHotelRoomBodyDto {
   @ApiProperty()

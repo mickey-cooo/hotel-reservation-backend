@@ -5,24 +5,22 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
-import { Repository } from 'typeorm';
-import {
-  // CreateHotelRoomBodyDto,
-  CreateManyHotelRoomBodyDto,
-} from './dto/create-hotel-room.dto';
+import { DataSource, Repository } from 'typeorm';
+import { CreateManyHotelRoomBodyDto } from './dto/create-hotel-room.dto';
 import { HotelEntity } from '../database/hotel.entity';
-import { CommonStatus } from 'src/enum/common.status';
+import { CommonStatus } from '../enum/common.status';
 import {
   HotelRoomBodyParamsDto,
   HotelRoomParamDto,
 } from './dto/hotel-room-params.dto';
 import { UpdateHotelRoomBodyDto } from './dto/update-hotel-room.dto';
-import { HotelRoomStatus } from 'src/enum/hotel-room.status';
+import { HotelRoomStatus } from '../enum/hotel-room.status';
 import { HotelRoomDataInterface } from './interface/hotel-room.interface';
 
 @Injectable()
 export class HotelRoomService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(HotelRoomEntity)
     private readonly hotelRoomRepository: Repository<HotelRoomEntity>,
     @InjectRepository(HotelEntity)
@@ -114,6 +112,9 @@ export class HotelRoomService {
     param: HotelRoomParamDto,
     body: UpdateHotelRoomBodyDto,
   ): Promise<HotelRoomDataInterface> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const hotelRoom = await this.hotelRoomRepository
         .createQueryBuilder('hr')
@@ -132,21 +133,37 @@ export class HotelRoomService {
           ...body,
         })
         .where('id = :id', { id: hotelRoom.id })
-        .returning('*')
+        .returning([
+          'id',
+          'name',
+          'description',
+          'image',
+          'price',
+          'capacity',
+          'policies',
+          'amenities',
+          'type',
+          'status',
+          'hotel_id',
+        ])
         .execute();
 
       if (!updatedHotelRoom) {
         throw new BadRequestException('Failed to update hotel room');
       }
-      return {
-        ...updatedHotelRoom.raw,
-      };
+      return updatedHotelRoom.raw;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
   async deleteHotelRoom(param: HotelRoomParamDto): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentHotelRoom = await this.hotelRoomRepository
         .createQueryBuilder('hr')
@@ -174,7 +191,10 @@ export class HotelRoomService {
 
       return;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AddressEntity } from 'src/database/address.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateAddressBodyDto } from './dto/create-address.dto';
 import {
   AddressBodyParamsDto,
@@ -31,6 +31,7 @@ import { AmphurEntity } from '../database/amhur.entity';
 @Injectable()
 export class AddressService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(AddressEntity)
     private readonly addressRepository: Repository<AddressEntity>,
     @InjectRepository(GeographyEntity)
@@ -68,7 +69,7 @@ export class AddressService {
 
       return {
         message: 'Address created successfully',
-        data: createdAddress.raw,
+        data: createdAddress.raw[0],
       };
     } catch (error) {
       throw new Error(error);
@@ -238,10 +239,10 @@ export class AddressService {
   async updateAddress(
     param: AddressParamDto,
     body: UpdateAddressBodyDto,
-  ): Promise<{
-    message: string;
-    data: AddressInterface;
-  }> {
+  ): Promise<AddressInterface> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentAddress = await this.addressRepository
         .createQueryBuilder('a')
@@ -264,26 +265,34 @@ export class AddressService {
           detail: body.detail,
         })
         .where('id = :id', { id: param.id })
-        .returning('*')
+        .returning([
+          'id',
+          'country',
+          'province',
+          'district',
+          'subDistrict',
+          'postalCode',
+          'detail',
+        ])
         .execute();
 
       if (!updatedAddress) {
         throw new BadRequestException('Failed to update address');
       }
 
-      return {
-        message: 'Address updated successfully',
-        data: updatedAddress.raw,
-      };
+      return updatedAddress.raw[0];
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
-  async deleteAddress(param: AddressParamDto): Promise<{
-    message: string;
-    data: AddressInterface;
-  }> {
+  async deleteAddress(param: AddressParamDto): Promise<AddressInterface> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const currentAddress = await this.addressRepository
         .createQueryBuilder('a')
@@ -308,12 +317,12 @@ export class AddressService {
         throw new BadRequestException('Failed to delete address');
       }
 
-      return {
-        message: 'Address deleted successfully',
-        data: deletedAddress.raw,
-      };
+      return deletedAddress.raw ?? null;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 }

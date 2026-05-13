@@ -10,6 +10,13 @@ import {
 import { UpdateHotelRoomBodyDto } from 'src/hotel-room/dto/update-hotel-room.dto';
 import { AddressDto } from 'src/user/dto/address.dto';
 
+export class UpdateHotelRoomInHotelDto extends UpdateHotelRoomBodyDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  roomId: string;
+}
+
 export class UpdateHotelBodyDto {
   @ApiProperty()
   @IsNotEmpty()
@@ -48,10 +55,10 @@ export class UpdateHotelBodyDto {
   @Type(() => AddressDto)
   addressDetail: AddressDto;
 
-  @ApiProperty()
+  @ApiProperty({ type: [UpdateHotelRoomInHotelDto] })
   @IsNotEmpty()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateHotelRoomBodyDto)
-  rooms: UpdateHotelRoomBodyDto[];
+  @Type(() => UpdateHotelRoomInHotelDto)
+  rooms: UpdateHotelRoomInHotelDto[];
 }
