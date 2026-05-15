@@ -1,0 +1,29 @@
+---
+description: Run a post-task retrospective and update project rules only when a durable lesson is found.
+globs:
+alwaysApply: false
+---
+
+# Retrospective Doctrine
+
+Use this rule only when the user explicitly asks for a retrospective, doctrine update, rule evolution, or session learning capture.
+
+## Retrospective Protocol
+
+1. Review the session from the original request through the latest user message.
+2. Identify what worked, what failed, what user feedback corrected the work, and what transferable lesson follows.
+3. Keep only lessons that are universal, reusable, abstract, and high-impact.
+4. Categorize each accepted lesson:
+   - Project doctrine: specific to this repository's stack, architecture, workflow, or conventions.
+   - Global doctrine: broadly applicable across projects.
+5. Before editing any rule file, search for existing project-level rules such as `AGENT.md`, `CLAUDE.md`, `.cursor/rules/`, `.cursorrules`, or similar files.
+6. Prefer refining an existing matching rule over appending a duplicate rule.
+7. Do not update doctrine when the lesson is one-off, obvious, low-impact, or already covered.
+
+## Final Report
+
+When finished, report:
+
+- Which rule file changed, or state that no doctrine update was warranted.
+- The exact diff of any rule changes.
+- A concise bullet list of the session learnings that justified the decision.

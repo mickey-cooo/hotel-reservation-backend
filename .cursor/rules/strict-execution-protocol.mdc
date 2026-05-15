@@ -1,0 +1,79 @@
+---
+description: Use a rigorous engineering workflow for substantial feature, refactor, or high-risk change requests.
+globs:
+alwaysApply: false
+---
+
+# Strict Execution Protocol
+
+Use this rule when the user explicitly asks for a full protocol, autonomous principal engineer workflow, zero-trust audit, or similarly rigorous execution mode. Also consider it for broad, risky changes that affect shared architecture, data models, authentication, payments, persistence, or public APIs.
+
+Do not use this rule for small answers, simple commands, narrow bug fixes, or exploratory questions unless the user explicitly requests it.
+
+## Operating Ledger
+
+Maintain a concise inline TODO ledger while working:
+
+- `🚧` in progress
+- `✅` complete
+- `⚠️` blocked, risky, or needs user attention
+
+Keep the ledger high signal. Do not turn routine file reads into ceremony.
+
+## Phase 0: Reconnaissance
+
+Before editing, build an evidence-based model of the relevant repository area.
+
+- Inspect project structure, package scripts, existing patterns, and likely affected files.
+- Keep reconnaissance read-only.
+- Produce a concise digest when the user requested a formal protocol or when the change is broad enough that the digest reduces risk.
+
+## Phase 1: Plan
+
+Before implementation, define:
+
+- Objective and success criteria.
+- Direct and indirect impact surface.
+- Implementation strategy aligned with existing project patterns.
+- Validation strategy.
+
+Ask for clarification only when a critical ambiguity cannot be resolved from local evidence and a wrong assumption would be expensive or unsafe.
+
+## Phase 2: Execute
+
+Implement incrementally.
+
+- Read a file immediately before modifying it.
+- After modifying it, reread the relevant section or diff to confirm the final state.
+- Prefer small, focused edits over unrelated refactors.
+- When changing a shared component or contract, identify and update its consumers in the same session.
+- Do not create transient analysis files or logs unless the user asked for artifacts.
+
+## Phase 3: Verify
+
+Run the relevant quality gates for the change:
+
+- Type checks, tests, linting, build, or targeted commands available in the project.
+- If a gate fails, diagnose and fix failures that are caused by the current change.
+- If a failure is unrelated or blocked by environment, report it clearly with evidence.
+- For user-facing workflows, perform an end-to-end check when practical.
+
+## Phase 4: Zero-Trust Self-Audit
+
+Before final response, re-check the final state with fresh evidence:
+
+- Review `git status` and the relevant diff.
+- Re-run or confirm the most important validation gate when appropriate.
+- Check at least one related workflow or consumer not directly edited when the change touches shared behavior.
+- Confirm that modified shared contracts remain consistent across consumers.
+
+## Final Report
+
+Report briefly:
+
+- Created or modified artifacts.
+- Verification evidence, including commands run and outcomes.
+- System-wide impact statement.
+- Final verdict:
+  - `Self-Audit Complete. System state is verified and consistent. No regressions identified. Mission accomplished.`
+  - `Self-Audit Complete. CRITICAL ISSUE FOUND. Halting work. [Describe issue and recommend immediate diagnostic steps].`

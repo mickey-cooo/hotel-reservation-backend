@@ -14,5 +14,6 @@ import { AddressModule } from '../address/address.module';
   ],
   controllers: [HotelController],
   providers: [HotelService],
+  exports: [HotelService],
 })
 export class HotelModule {}

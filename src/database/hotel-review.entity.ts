@@ -1,4 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+} from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { UserEntity } from './user.entity';
 import { HotelEntity } from './hotel.entity';
@@ -23,8 +29,20 @@ export class HotelReviewEntity extends TemplateEntity {
   @Column({ type: 'timestamptz', nullable: true })
   replyDate: Date;
 
+  @Column({ type: 'boolean', nullable: true })
+  isReply: boolean;
+
   @Column({ type: 'jsonb', nullable: true })
   reply: string[];
+
+  @Column({ type: 'varchar', nullable: true })
+  replyBy: string;
+
+  @DeleteDateColumn({
+    type: 'timestamptz',
+    nullable: true,
+  })
+  deletedAt: Date;
 
   @ManyToOne(() => UserEntity, (user) => user.reviews)
   @JoinColumn({ name: 'user_id' })

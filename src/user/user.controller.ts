@@ -6,12 +6,16 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateBodyUserDto } from './dto/create-user.dto';
 import { BodyUserIdsDto, ParamUserDto } from './dto/user-param.dto';
 import { UpdateBodyUserDto } from './dto/update-user.dto';
 import { LoginBodyDto, RegisterBodyDto } from './dto/authenticate.dto';
+import { Token } from '../decorator/token.decorator';
+import { AuthGuard } from 'src/guard/auth.guard';
+import { TokenPayload } from 'src/helper/app.const';
 
 @Controller('user')
 export class UserController {
@@ -27,29 +31,35 @@ export class UserController {
     return this.userService.login(body);
   }
 
+  @UseGuards(AuthGuard)
   @Post('/create')
   async createUser(@Body() body: CreateBodyUserDto) {
     return this.userService.createUser(body);
   }
 
+  @UseGuards(AuthGuard)
   @Get('/list')
   async findAllUser(@Body() body: BodyUserIdsDto) {
     return this.userService.findAllUser(body);
   }
 
+  @UseGuards(AuthGuard)
   @Get('/:id')
   async findOneUser(@Param() param: ParamUserDto) {
     return this.userService.findOneUser(param);
   }
 
+  @UseGuards(AuthGuard)
   @Patch('update/:id')
   async updateUser(
     @Param() param: ParamUserDto,
     @Body() body: UpdateBodyUserDto,
+    @Token() token: TokenPayload,
   ) {
-    return this.userService.updateUser(param, body);
+    return this.userService.updateUser(param, body, token.id);
   }
 
+  @UseGuards(AuthGuard)
   @Delete('delete/:id')
   async deleteUser(@Param() param: ParamUserDto) {
     return this.userService.deleteUser(param);

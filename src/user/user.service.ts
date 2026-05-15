@@ -126,7 +126,11 @@ export class UserService {
     }
   }
 
-  async updateUser(param: ParamUserDto, body: UpdateBodyUserDto) {
+  async updateUser(
+    param: ParamUserDto,
+    body: UpdateBodyUserDto,
+    userId: string,
+  ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -149,6 +153,8 @@ export class UserService {
           firstName: body.firstName,
           lastName: body.lastName,
           phoneNumber: body.phoneNumber,
+          updatedBy: userId,
+          updatedAt: new Date(),
         })
         .where('id = :id', { id: currentUser?.id })
         .returning('*')
@@ -319,6 +325,7 @@ export class UserService {
     try {
       const userExists = await this.userRepository
         .createQueryBuilder('u')
+        .leftJoinAndSelect('u.role', 'role')
         .where('u.email = :email', { email: body.email })
         .andWhere('u.status = :status', { status: CommonStatus.ACTIVE })
         .getOne();
@@ -336,8 +343,12 @@ export class UserService {
         throw new BadRequestException('Invalid password');
       }
 
+      const role = userExists.role;
       const token = this.jwtService.sign({
         id: userExists.id,
+        email: userExists.email,
+        roles: role?.name ? [role.name] : [],
+        roleId: role?.id,
       });
 
       return {
