@@ -15,5 +15,16 @@ export class HotelReviewInterface {
   @ApiProperty()
   isReply: boolean;
   @ApiProperty()
-  reply: string[];
+  reply: string;
+}
+
+export class ReplyHotelReviewInterface {
+  @ApiProperty()
+  isReply: boolean;
+  @ApiProperty()
+  reply: string;
+  @ApiProperty()
+  replyBy: string;
+  @ApiProperty()
+  replyDate: Date;
 }

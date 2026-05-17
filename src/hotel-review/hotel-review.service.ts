@@ -12,8 +12,12 @@ import {
   HotelReviewParamDto,
   HotelReviewParamsDto,
 } from './dto/hotel-review-params.dto';
-import { HotelReviewInterface } from './interface/hotel-review-interface';
+import {
+  HotelReviewInterface,
+  ReplyHotelReviewInterface,
+} from './interface/hotel-review-interface';
 import { UpdateHotelReviewBodyDto } from './dto/update-hotel-review.dto';
+import { ReplyHotelReviewBodyDto } from './dto/reply-hotel-review.dto';
 
 @Injectable()
 export class HotelReviewService {
@@ -42,7 +46,7 @@ export class HotelReviewService {
         .insert()
         .values({
           hotel: { id: currentHotel.data.id },
-          user: { id: userId },
+          user: body.isAnonymous === true ? null : { id: userId },
           title: body.title,
           description: body.description,
           rating: body.rating,
@@ -217,6 +221,40 @@ export class HotelReviewService {
       throw new Error(error);
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async replyHotelReview(
+    body: ReplyHotelReviewBodyDto,
+    userId: string,
+  ): Promise<ReplyHotelReviewInterface> {
+    try {
+      const hotelReview = await this.hotelReviewRepository
+        .createQueryBuilder('hr')
+        .where('hr.id = :id', { id: body.review_id })
+        .andWhere('hr.hotel_id = :hotel_id', { hotel_id: body.hotel_id })
+        .andWhere('hr.deletedAt IS NULL')
+        .getOne();
+
+      if (!hotelReview) {
+        throw new NotFoundException('Hotel review not found');
+      }
+
+      const updatedHotelReview = await this.hotelReviewRepository
+        .createQueryBuilder()
+        .update(HotelReviewEntity)
+        .set({ ...body, replyBy: userId, replyDate: new Date() })
+        .where('id = :id', { id: hotelReview.id })
+        .returning(['reviewDate', 'isReply', 'reply', 'replyBy', 'replyDate'])
+        .execute();
+
+      if (!updatedHotelReview) {
+        throw new BadRequestException('Failed to reply hotel review');
+      }
+
+      return updatedHotelReview.raw;
+    } catch (error) {
+      throw new Error(error);
     }
   }
 }

@@ -19,6 +19,7 @@ import {
   HotelReviewParamsDto,
 } from './dto/hotel-review-params.dto';
 import { UpdateHotelReviewBodyDto } from './dto/update-hotel-review.dto';
+import { ReplyHotelReviewBodyDto } from './dto/reply-hotel-review.dto';
 
 @ApiTags('Hotel Review')
 @UseGuards(AuthGuard)
@@ -32,6 +33,14 @@ export class HotelReviewController {
     @Token() token: TokenPayload,
   ) {
     return await this.hotelReviewService.createHotelReview(body, token.id);
+  }
+
+  @Post('/reply')
+  async replyHotelReview(
+    @Body() body: ReplyHotelReviewBodyDto,
+    @Token() token: TokenPayload,
+  ) {
+    return await this.hotelReviewService.replyHotelReview(body, token.id);
   }
 
   @Get('/list')
