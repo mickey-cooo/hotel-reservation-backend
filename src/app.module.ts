@@ -7,6 +7,8 @@ import { HotelModule } from './hotel/hotel.module';
 import { HotelRoomModule } from './hotel-room/hotel-room.module';
 import { AddressModule } from './address/address.module';
 import { HotelReviewModule } from './hotel-review/hotel-review.module';
+import { HotelBookingModule } from './hotel-booking/hotel-booking.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { HotelReviewModule } from './hotel-review/hotel-review.module';
     HotelRoomModule,
     AddressModule,
     HotelReviewModule,
+    HotelBookingModule,
+    PaymentModule,
   ],
 })
 export class AppModule {}

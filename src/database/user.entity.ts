@@ -8,10 +8,11 @@ import {
 } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { AddressEntity } from './address.entity';
-import { CommonStatus } from 'src/enum/common.status';
+import { CommonStatus } from '../enum/common.status';
 import { RoleEntity } from './role.entity';
 import { HotelReviewEntity } from './hotel-review.entity';
 import { BookingEntity } from './booking.entity';
+import { PaymentEntity } from './payment.entity';
 
 export interface UserNameType {
   th: string;
@@ -51,4 +52,7 @@ export class UserEntity extends TemplateEntity {
 
   @OneToMany(() => BookingEntity, (booking) => booking.user)
   bookings?: BookingEntity[];
+
+  @OneToMany(() => PaymentEntity, (payment) => payment.user)
+  payments?: PaymentEntity[];
 }
