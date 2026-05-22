@@ -1,98 +1,297 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Hotel Reservation System Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API สำหรับระบบจองโรงแรม พัฒนาด้วย NestJS, TypeScript, TypeORM และ PostgreSQL
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- Node.js 22
+- NestJS 11
+- TypeScript
+- PostgreSQL
+- TypeORM
+- JWT Authentication
+- Swagger/OpenAPI
+- Jest
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Project Structure
 
-## Project setup
-
-```bash
-$ yarn install
+```text
+src/
+  address/          Address and Thailand location data APIs
+  database/         TypeORM entities
+  decorator/        Custom decorators
+  enum/             Shared enum values
+  guard/            Authentication guard
+  hotel/            Hotel APIs
+  hotel-booking/    Booking APIs
+  hotel-review/     Review and reply APIs
+  hotel-room/       Room APIs
+  payment/          Payment card APIs
+  role/             Role APIs
+  user/             User and authentication APIs
 ```
 
-## Compile and run the project
+## Environment Variables
+
+สร้างไฟล์ `.env` ที่ root ของ backend แล้วใส่ค่าตาม environment จริงของเครื่องหรือ server
+
+```env
+PORT=3000
+FRONTEND_URL=http://localhost:3001
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=<database-password>
+DB_DATABASE=hotel_reservation
+
+JWT_SECRET=<jwt-secret>
+```
+
+หมายเหตุ: อย่า commit ค่า credential จริง เช่น database password หรือ JWT secret ลง repository
+
+## Installation
+
+```bash
+yarn install
+```
+
+## Run
 
 ```bash
 # development
-$ yarn run start
+yarn start
 
-# watch mode
-$ yarn run start:dev
+# development with watch mode
+yarn start:dev
 
-# production mode
-$ yarn run start:prod
+# production build
+yarn build
+yarn start:prod
 ```
 
-## Run tests
+API จะมี global prefix เป็น:
+
+```text
+/api/v1
+```
+
+Swagger UI:
+
+```text
+/api
+```
+
+## Test
 
 ```bash
 # unit tests
-$ yarn run test
+yarn test
 
 # e2e tests
-$ yarn run test:e2e
+yarn test:e2e
 
 # test coverage
-$ yarn run test:cov
+yarn test:cov
+
+# lint
+yarn lint
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Docker
 
 ```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+docker build -t hotel-reservation-backend .
+docker run --env-file .env -p 3000:3000 hotel-reservation-backend
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Authentication
 
-## Resources
+บาง endpoint ต้องใช้ JWT token ผ่าน header:
 
-Check out a few resources that may come in handy when working with NestJS:
+```http
+Authorization: Bearer <access-token>
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Login API จะ return `accessToken` กลับมาในรูปแบบ `Bearer <token>` และ token มีอายุ 7 วัน
 
-## Support
+## Services And APIs
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+ทุก endpoint ด้านล่างอยู่ภายใต้ prefix `/api/v1`
 
-## Stay in touch
+### User Service
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+จัดการ user, register, login และ profile/address ของ user
 
-## License
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/user/register` | No | สมัครสมาชิกด้วย email และ password |
+| POST | `/user/login` | No | เข้าสู่ระบบและรับ JWT access token |
+| POST | `/user/create` | Yes | สร้าง user |
+| GET | `/user/list` | Yes | ดึงรายการ user ตาม `ids` |
+| GET | `/user/:id` | Yes | ดึง user ตาม id |
+| PATCH | `/user/update/:id` | Yes | แก้ไข user และ address |
+| DELETE | `/user/delete/:id` | Yes | soft delete user |
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Role Service
+
+จัดการ role และ priority ของ role
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/role/create` | No | สร้าง role |
+| GET | `/role/list` | No | ดึงรายการ role ตาม `ids` |
+| GET | `/role/:id` | No | ดึง role ตาม id |
+| PATCH | `/role/update/:id` | No | แก้ไข role |
+| DELETE | `/role/delete/:id` | No | ลบ role |
+
+### Hotel Service
+
+จัดการข้อมูลโรงแรม ที่อยู่ และห้องพักที่เกี่ยวข้อง
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/hotel/create` | No | สร้าง hotel พร้อม address และ rooms |
+| GET | `/hotel/list` | No | ดึงรายการ hotel ตาม `ids` |
+| GET | `/hotel/:id` | No | ดึง hotel ตาม id |
+| PATCH | `/hotel/update/:id` | No | แก้ไข hotel, address และ rooms |
+| DELETE | `/hotel/delete/:id` | No | ลบ hotel |
+
+### Hotel Room Service
+
+จัดการห้องพัก ราคา ความจุ สถานะ amenities และ policies
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/hotel-room/create` | No | สร้างห้องพักหลายรายการ |
+| GET | `/hotel-room/list` | No | ดึงรายการห้องพักตาม `ids` |
+| GET | `/hotel-room/:id` | No | ดึงห้องพักตาม id |
+| PATCH | `/hotel-room/update/:id` | No | แก้ไขห้องพัก |
+| DELETE | `/hotel-room/delete/:id` | No | ลบห้องพัก |
+| GET | `/hotel-room/availability/:id` | No | ตรวจสอบ availability ของห้องพัก |
+
+### Address Service
+
+จัดการ address และข้อมูล geography/province/district
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/address/create` | No | สร้าง address |
+| GET | `/address/:id` | No | ดึง address ตาม id |
+| GET | `/address/list` | No | ดึงรายการ address ตาม `ids` |
+| GET | `/address/geography/list` | No | ดึงรายการ geography ตาม `geo_ids` |
+| GET | `/address/province/:id` | No | ดึง province ตาม id |
+| GET | `/address/district/province/:geo_id/:province_id` | No | ดึง district ตาม geography และ province |
+| PATCH | `/address/update/:id` | No | แก้ไข address |
+| DELETE | `/address/delete/:id` | No | ลบ address |
+
+### Hotel Review Service
+
+จัดการ review โรงแรมและ reply review ต้องผ่าน authentication ทุก endpoint
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/hotel-review/create` | Yes | สร้าง review ให้ hotel |
+| POST | `/hotel-review/reply` | Yes | ตอบกลับ review |
+| GET | `/hotel-review/list` | Yes | ดึง review ตาม `hotel_id` |
+| GET | `/hotel-review/:id/hotel/:hotel_id` | Yes | ดึง review รายการเดียว |
+| PATCH | `/hotel-review/:id/hotel/:hotel_id` | Yes | แก้ไข review |
+| DELETE | `/hotel-review/:id/hotel/:hotel_id` | Yes | ลบ review |
+
+### Hotel Booking Service
+
+จัดการ booking ห้องพัก ต้องผ่าน authentication ทุก endpoint
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/hotel-booking/create` | Yes | สร้าง booking |
+| GET | `/hotel-booking/list` | Yes | ดึงรายการ booking ของ user |
+| GET | `/hotel-booking/:id` | Yes | ดึง booking รายการเดียว |
+| PATCH | `/hotel-booking/update/:id` | Yes | แก้ไข booking |
+| DELETE | `/hotel-booking/cancel/:id` | Yes | ยกเลิก booking |
+
+### Payment Service
+
+จัดการข้อมูล payment card ของ user ต้องผ่าน authentication ทุก endpoint
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/payment/create` | Yes | สร้าง payment method |
+| GET | `/payment/list` | Yes | ดึงรายการ payment method, optional query `user_id` |
+| GET | `/payment/:id` | Yes | ดึง payment method ตาม id |
+| PATCH | `/payment/update/:id` | Yes | แก้ไข payment method |
+| DELETE | `/payment/delete/:id` | Yes | ลบ payment method |
+
+## Common Enum Values
+
+### CommonStatus
+
+- `active`
+- `inactive`
+- `pending`
+- `deleted`
+
+### HotelRoomStatus
+
+- `available`
+- `unavailable`
+- `maintenance`
+- `out_of_order`
+
+### HotelRoomType
+
+- `single`
+- `double`
+- `king`
+- `queen`
+- `suite`
+
+### HotelRoomAmenities
+
+- `wifi`
+- `tv`
+- `air_conditioning`
+- `minibar`
+- `safe`
+- `private_bathroom`
+- `private_balcony`
+- `private_terrace`
+
+### RoomPolicyType
+
+- `pets`
+- `children`
+- `smoking`
+- `adults`
+
+### HotelBookingStatus
+
+- `booked`
+- `awaiting_payment`
+- `awaiting_confirmation`
+- `confirmed`
+- `cancelled`
+- `refunded`
+- `completed`
+- `expired`
+
+### PaymentMethod
+
+- `credit_card`
+- `debit_card`
+- `paypal`
+- `bank_transfer`
+- `cash`
+
+### PaymentStatus
+
+- `pending`
+- `paid`
+- `failed`
+- `refunded`
+
+## Notes
+
+- TypeORM currently uses `synchronize: true`, which is convenient during development but should be reviewed before production deployment.
+- Some GET endpoints read filters from request body, for example `ids`, `hotel_id`, or `geo_ids`. Check Swagger at `/api` for DTO details.
+- Do not store real card data, database passwords, JWT secrets, or other credentials in README, examples, tests, or committed files.
