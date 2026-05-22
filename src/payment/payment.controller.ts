@@ -8,40 +8,52 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { AuthGuard } from 'src/guard/auth.guard';
 import { PaymentService } from './payment.service';
 import { CreatePaymentBodyDto } from './dto/create-payment.dto';
 import { UpdatePaymentBodyDto } from './dto/update-payment.dto';
 import {
-  ParamPaymentDto,
+  ParamPaymentIdDto,
   ParamPaymentQueryDto,
 } from './dto/payment-params.dto';
-
+import { ApiTags } from '@nestjs/swagger';
+import { UseGuards } from '@nestjs/common';
+import { Token } from '../decorator/token.decorator';
+import { TokenPayload } from '../helper/app.const';
+@ApiTags('Payment')
+@UseGuards(AuthGuard)
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post('/create')
-  create(@Body() body: CreatePaymentBodyDto) {
-    return this.paymentService.create(body);
+  async create(
+    @Body() body: CreatePaymentBodyDto,
+    @Token() token: TokenPayload,
+  ) {
+    return await this.paymentService.create(body, token.id);
   }
 
   @Get('/list')
-  findAll(@Query() query: ParamPaymentQueryDto) {
-    return this.paymentService.findAll(query);
+  async findAll(@Query() query: ParamPaymentQueryDto) {
+    return await this.paymentService.findAll(query);
   }
 
   @Get('/:id')
-  findOne(@Param() param: ParamPaymentDto) {
-    return this.paymentService.findOne(param);
+  async findOne(@Param() param: ParamPaymentIdDto) {
+    return await this.paymentService.findOne(param);
   }
 
   @Patch('/update/:id')
-  update(@Param() param: ParamPaymentDto, @Body() body: UpdatePaymentBodyDto) {
-    return this.paymentService.update(param, body);
+  async update(
+    @Param() param: ParamPaymentIdDto,
+    @Body() body: UpdatePaymentBodyDto,
+  ) {
+    return await this.paymentService.update(param, body);
   }
 
   @Delete('/delete/:id')
-  delete(@Param() param: ParamPaymentDto) {
-    return this.paymentService.delete(param);
+  async delete(@Param() param: ParamPaymentIdDto) {
+    return await this.paymentService.delete(param);
   }
 }

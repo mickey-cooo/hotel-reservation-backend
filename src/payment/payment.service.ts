@@ -13,7 +13,7 @@ import { CreatePaymentBodyDto } from './dto/create-payment.dto';
 import { UpdatePaymentBodyDto } from './dto/update-payment.dto';
 import { PaymentResponse } from './interface/payment.interface';
 import {
-  ParamPaymentDto,
+  ParamPaymentIdDto,
   ParamPaymentQueryDto,
 } from './dto/payment-params.dto';
 
@@ -28,11 +28,36 @@ export class PaymentService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async create(body: CreatePaymentBodyDto) {
+  async create(body: CreatePaymentBodyDto, user_id: string) {
     try {
-      const user = await this.findActiveUser(body.user_id ?? '');
       const cardNumberHash = await this.hashSecret(body.cardNumber);
       const cardCvvHash = await this.hashSecret(body.cardCvv);
+
+      const existingCards = await this.paymentRepository
+        .createQueryBuilder('p')
+        .select(['p.id', 'p.cardNumber'])
+        .where('p.status = :status', { status: CommonStatus.ACTIVE })
+        .andWhere('p.user_id = :userId', { userId: user_id })
+        .getMany();
+
+      const isDuplicate = await Promise.all(
+        existingCards.map((card) =>
+          bcrypt.compare(body.cardNumber, card.cardNumber),
+        ),
+      ).then((results) => results.some(Boolean));
+
+      if (isDuplicate) {
+        throw new BadRequestException('Card number already exists');
+      }
+
+      if (body.cardExpiryMonth && body.cardExpiryYear) {
+        const expiryDate = new Date(
+          `${body.cardExpiryYear}-${body.cardExpiryMonth}`,
+        );
+        if (expiryDate < new Date()) {
+          throw new BadRequestException('Card expiry date is in the past');
+        }
+      }
 
       const createdPayment = await this.paymentRepository
         .createQueryBuilder()
@@ -45,7 +70,8 @@ export class PaymentService {
           cardExpiryYear: body.cardExpiryYear,
           cardCvv: cardCvvHash,
           status: CommonStatus.ACTIVE,
-          user: { id: user?.id },
+          user: { id: user_id },
+          createdBy: user_id,
         })
         .returning([
           'id',
@@ -99,7 +125,7 @@ export class PaymentService {
     }
   }
 
-  async findOne(param: ParamPaymentDto) {
+  async findOne(param: ParamPaymentIdDto) {
     try {
       const payment = await this.findActivePayment(param.id);
 
@@ -113,7 +139,7 @@ export class PaymentService {
     }
   }
 
-  async update(param: ParamPaymentDto, body: UpdatePaymentBodyDto) {
+  async update(param: ParamPaymentIdDto, body: UpdatePaymentBodyDto) {
     try {
       const currentPayment = await this.findActivePayment(param.id);
       const user_id = body.user_id;
@@ -124,6 +150,15 @@ export class PaymentService {
       const cardCvvHash = body.cardCvv
         ? await this.hashSecret(body.cardCvv)
         : undefined;
+
+      if (body.cardExpiryMonth && body.cardExpiryYear) {
+        const expiryDate = new Date(
+          `${body.cardExpiryYear}-${body.cardExpiryMonth}`,
+        );
+        if (expiryDate < new Date()) {
+          throw new BadRequestException('Card expiry date is in the past');
+        }
+      }
 
       const updatedPayment = await this.paymentRepository
         .createQueryBuilder()
@@ -159,7 +194,7 @@ export class PaymentService {
     }
   }
 
-  async delete(param: ParamPaymentDto) {
+  async delete(param: ParamPaymentIdDto) {
     try {
       const payment = await this.findActivePayment(param.id);
 

@@ -19,6 +19,7 @@ describe('PaymentService', () => {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    getMany: jest.fn(),
     getRawMany: jest.fn(),
     getRawOne: jest.fn(),
     execute: jest.fn(),
@@ -78,16 +79,19 @@ describe('PaymentService', () => {
     };
 
     userQueryBuilder.getRawOne.mockResolvedValue(user);
+    paymentQueryBuilder.getMany.mockResolvedValue([]);
     paymentQueryBuilder.execute.mockResolvedValue(createdPayment);
 
-    const result = await service.create({
-      user_id: 'user-id',
-      cardNumber: '4111111111111111',
-      cardHolderName: 'Mickey Mouse',
-      cardExpiryMonth: '12',
-      cardExpiryYear: '2030',
-      cardCvv: '123',
-    });
+    const result = await service.create(
+      {
+        cardNumber: '4111111111111111',
+        cardHolderName: 'Mickey Mouse',
+        cardExpiryMonth: '12',
+        cardExpiryYear: '2030',
+        cardCvv: '123',
+      },
+      'user-id',
+    );
 
     expect(paymentQueryBuilder.values).toHaveBeenCalledWith(
       expect.objectContaining({

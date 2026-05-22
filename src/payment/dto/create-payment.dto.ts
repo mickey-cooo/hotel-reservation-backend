@@ -1,15 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, Max, Min } from 'class-validator';
 
 export class CreatePaymentBodyDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  user_id?: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
+  @Max(15)
+  @Min(15)
   cardNumber: string;
 
   @ApiProperty()
@@ -30,5 +27,7 @@ export class CreatePaymentBodyDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
+  @Max(3)
+  @Min(3)
   cardCvv: string;
 }
