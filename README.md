@@ -1,270 +1,164 @@
 # Hotel Reservation System Backend
 
-Backend API สำหรับระบบจองโรงแรม พัฒนาด้วย NestJS, TypeScript, TypeORM และ PostgreSQL
+เอกสารนี้สรุปการทำงานของ service หลักใน backend ระบบจองโรงแรม โดยไม่ระบุค่า credential, secret, environment variable หรือข้อมูลสำหรับเชื่อมต่อระบบจริง
 
-## Tech Stack
+## ภาพรวมระบบ
 
-- Node.js 22
-- NestJS 11
-- TypeScript
-- PostgreSQL
-- TypeORM
-- JWT Authentication
-- Swagger/OpenAPI
-- Jest
+Backend นี้เป็น API สำหรับระบบจองโรงแรม แบ่งการทำงานออกเป็น service ตาม domain หลัก ได้แก่ user, role, hotel, room, address, review, booking และ payment
 
-## Project Structure
+ระบบใช้แนวคิดหลักดังนี้:
 
-```text
-src/
-  address/          Address and Thailand location data APIs
-  database/         TypeORM entities
-  decorator/        Custom decorators
-  enum/             Shared enum values
-  guard/            Authentication guard
-  hotel/            Hotel APIs
-  hotel-booking/    Booking APIs
-  hotel-review/     Review and reply APIs
-  hotel-room/       Room APIs
-  payment/          Payment card APIs
-  role/             Role APIs
-  user/             User and authentication APIs
-```
+- User สามารถสมัครสมาชิกและ login เพื่อรับ JWT token
+- Hotel เก็บข้อมูลโรงแรม ที่อยู่ และรายการห้องพัก
+- Hotel Room เก็บข้อมูลห้องพัก ราคา ความจุ สถานะ และสิ่งอำนวยความสะดวก
+- Booking ผูก user, hotel และ room เข้าด้วยกันเพื่อสร้างรายการจอง
+- Review ให้ user เขียนรีวิวโรงแรม และรองรับการตอบกลับรีวิว
+- Payment เก็บข้อมูลวิธีชำระเงินที่ผูกกับ user
+- Address ใช้จัดการที่อยู่และข้อมูลพื้นที่ เช่น geography, province และ district
 
-## Environment Variables
-
-สร้างไฟล์ `.env` ที่ root ของ backend แล้วใส่ค่าตาม environment จริงของเครื่องหรือ server
-
-```env
-PORT=3000
-FRONTEND_URL=http://localhost:3001
-
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=<database-password>
-DB_DATABASE=hotel_reservation
-
-JWT_SECRET=<jwt-secret>
-```
-
-หมายเหตุ: อย่า commit ค่า credential จริง เช่น database password หรือ JWT secret ลง repository
-
-## Installation
-
-```bash
-yarn install
-```
-
-## Run
-
-```bash
-# development
-yarn start
-
-# development with watch mode
-yarn start:dev
-
-# production build
-yarn build
-yarn start:prod
-```
-
-API จะมี global prefix เป็น:
-
-```text
-/api/v1
-```
-
-Swagger UI:
-
-```text
-/api
-```
-
-## Test
-
-```bash
-# unit tests
-yarn test
-
-# e2e tests
-yarn test:e2e
-
-# test coverage
-yarn test:cov
-
-# lint
-yarn lint
-```
-
-## Docker
-
-```bash
-docker build -t hotel-reservation-backend .
-docker run --env-file .env -p 3000:3000 hotel-reservation-backend
-```
-
-## Authentication
-
-บาง endpoint ต้องใช้ JWT token ผ่าน header:
-
-```http
-Authorization: Bearer <access-token>
-```
-
-Login API จะ return `accessToken` กลับมาในรูปแบบ `Bearer <token>` และ token มีอายุ 7 วัน
-
-## Services And APIs
-
-ทุก endpoint ด้านล่างอยู่ภายใต้ prefix `/api/v1`
+## Service การทำงาน
 
 ### User Service
 
-จัดการ user, register, login และ profile/address ของ user
+User Service รับผิดชอบการจัดการบัญชีผู้ใช้และ authentication
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/user/register` | No | สมัครสมาชิกด้วย email และ password |
-| POST | `/user/login` | No | เข้าสู่ระบบและรับ JWT access token |
-| POST | `/user/create` | Yes | สร้าง user |
-| GET | `/user/list` | Yes | ดึงรายการ user ตาม `ids` |
-| GET | `/user/:id` | Yes | ดึง user ตาม id |
-| PATCH | `/user/update/:id` | Yes | แก้ไข user และ address |
-| DELETE | `/user/delete/:id` | Yes | soft delete user |
+การทำงานหลัก:
+
+- สมัครสมาชิกด้วย email, password และ confirm password
+- ตรวจสอบ email ซ้ำก่อนสร้าง user ใหม่
+- เข้ารหัส password ด้วย bcrypt ก่อนบันทึก
+- Login ด้วย email และ password
+- ตรวจสอบ password แล้วสร้าง JWT access token
+- ดึงข้อมูล user รายเดียวหรือหลายรายการ
+- แก้ไขข้อมูล user พร้อม address
+- ลบ user แบบ soft delete โดยเปลี่ยน status เป็น `deleted`
+
+Flow สำคัญ:
+
+1. Register รับ email/password
+2. Service ตรวจ email ซ้ำและตรวจ password confirmation
+3. Password ถูก hash ก่อนบันทึก
+4. Login ตรวจ credentials
+5. ถ้าถูกต้อง ระบบออก JWT token ให้ client ใช้เรียก protected APIs
 
 ### Role Service
 
-จัดการ role และ priority ของ role
+Role Service ใช้จัดการ role ของ user และลำดับความสำคัญของ role
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/role/create` | No | สร้าง role |
-| GET | `/role/list` | No | ดึงรายการ role ตาม `ids` |
-| GET | `/role/:id` | No | ดึง role ตาม id |
-| PATCH | `/role/update/:id` | No | แก้ไข role |
-| DELETE | `/role/delete/:id` | No | ลบ role |
+การทำงานหลัก:
+
+- สร้าง role
+- ดึง role รายเดียว
+- ดึง role หลายรายการตาม id
+- แก้ไขชื่อ, description และ priority
+- ลบ role
+
+ข้อมูล role ถูกนำไปใช้กับ User Service ตอน login เพื่อใส่ข้อมูล role ลงใน JWT payload
 
 ### Hotel Service
 
-จัดการข้อมูลโรงแรม ที่อยู่ และห้องพักที่เกี่ยวข้อง
+Hotel Service รับผิดชอบข้อมูลโรงแรม รวมถึง address และ room ที่เกี่ยวข้องกับโรงแรม
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/hotel/create` | No | สร้าง hotel พร้อม address และ rooms |
-| GET | `/hotel/list` | No | ดึงรายการ hotel ตาม `ids` |
-| GET | `/hotel/:id` | No | ดึง hotel ตาม id |
-| PATCH | `/hotel/update/:id` | No | แก้ไข hotel, address และ rooms |
-| DELETE | `/hotel/delete/:id` | No | ลบ hotel |
+การทำงานหลัก:
+
+- สร้างโรงแรมใหม่
+- บันทึกข้อมูลพื้นฐาน เช่น name, description, image, phoneNumber, email และ website
+- สร้างหรือผูก address ของโรงแรม
+- สร้างรายการห้องพักของโรงแรมพร้อมกันได้
+- ดึงข้อมูลโรงแรมรายเดียว
+- ดึงโรงแรมหลายรายการตาม id
+- แก้ไขข้อมูลโรงแรม, address และ room ที่เกี่ยวข้อง
+- ลบโรงแรม
+
+Flow สำคัญ:
+
+1. Client ส่งข้อมูล hotel พร้อม addressDetail และ rooms
+2. Service สร้าง address
+3. Service สร้าง hotel และผูก address
+4. Service สร้าง rooms แล้วผูกกับ hotel
 
 ### Hotel Room Service
 
-จัดการห้องพัก ราคา ความจุ สถานะ amenities และ policies
+Hotel Room Service จัดการข้อมูลห้องพักของโรงแรม
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/hotel-room/create` | No | สร้างห้องพักหลายรายการ |
-| GET | `/hotel-room/list` | No | ดึงรายการห้องพักตาม `ids` |
-| GET | `/hotel-room/:id` | No | ดึงห้องพักตาม id |
-| PATCH | `/hotel-room/update/:id` | No | แก้ไขห้องพัก |
-| DELETE | `/hotel-room/delete/:id` | No | ลบห้องพัก |
-| GET | `/hotel-room/availability/:id` | No | ตรวจสอบ availability ของห้องพัก |
+การทำงานหลัก:
+
+- สร้างห้องพักหลายรายการใน request เดียว
+- ดึงข้อมูลห้องพักรายเดียว
+- ดึงห้องพักหลายรายการตาม id
+- แก้ไขชื่อ, description, image, price, capacity, policies, amenities และ room type
+- ลบห้องพัก
+- ตรวจสอบ availability ของห้องพัก
+
+ข้อมูลสำคัญของห้องพัก:
+
+- `price` ราคาห้อง
+- `capacity` จำนวนผู้เข้าพักสูงสุด
+- `status` เช่น available, unavailable, maintenance
+- `type` เช่น single, double, king, queen, suite
+- `amenities` เช่น wifi, tv, minibar, safe
+- `policies` เช่น pets, children, smoking, adults
 
 ### Address Service
 
-จัดการ address และข้อมูล geography/province/district
+Address Service ใช้จัดการข้อมูลที่อยู่และข้อมูลพื้นที่
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/address/create` | No | สร้าง address |
-| GET | `/address/:id` | No | ดึง address ตาม id |
-| GET | `/address/list` | No | ดึงรายการ address ตาม `ids` |
-| GET | `/address/geography/list` | No | ดึงรายการ geography ตาม `geo_ids` |
-| GET | `/address/province/:id` | No | ดึง province ตาม id |
-| GET | `/address/district/province/:geo_id/:province_id` | No | ดึง district ตาม geography และ province |
-| PATCH | `/address/update/:id` | No | แก้ไข address |
-| DELETE | `/address/delete/:id` | No | ลบ address |
+การทำงานหลัก:
+
+- สร้าง address
+- ดึง address รายเดียว
+- ดึง address หลายรายการตาม id
+- แก้ไข address
+- ลบ address
+- ดึง geography หลายรายการ
+- ดึง province รายเดียว
+- ดึง district จาก geography และ province
+
+Address ถูกใช้ร่วมกับหลาย domain เช่น user และ hotel
 
 ### Hotel Review Service
 
-จัดการ review โรงแรมและ reply review ต้องผ่าน authentication ทุก endpoint
+Hotel Review Service จัดการรีวิวโรงแรมและการตอบกลับรีวิว
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/hotel-review/create` | Yes | สร้าง review ให้ hotel |
-| POST | `/hotel-review/reply` | Yes | ตอบกลับ review |
-| GET | `/hotel-review/list` | Yes | ดึง review ตาม `hotel_id` |
-| GET | `/hotel-review/:id/hotel/:hotel_id` | Yes | ดึง review รายการเดียว |
-| PATCH | `/hotel-review/:id/hotel/:hotel_id` | Yes | แก้ไข review |
-| DELETE | `/hotel-review/:id/hotel/:hotel_id` | Yes | ลบ review |
+การทำงานหลัก:
+
+- สร้าง review ให้โรงแรม
+- ระบุ title, description, rating และ anonymous flag
+- จำกัด rating อยู่ในช่วง 1 ถึง 5
+- ดึง review ทั้งหมดของโรงแรม
+- ดึง review รายเดียวจาก review id และ hotel id
+- แก้ไข review
+- ลบ review
+- ตอบกลับ review
+
+Flow สำคัญ:
+
+1. User ที่ login แล้วสร้าง review ให้ hotel
+2. Service ผูก review กับ user และ hotel
+3. User สามารถเลือกให้ review เป็น anonymous ได้
+4. ระบบรองรับ reply ของ review ผ่านข้อมูล hotel id และ review id
 
 ### Hotel Booking Service
 
-จัดการ booking ห้องพัก ต้องผ่าน authentication ทุก endpoint
+Hotel Booking Service รับผิดชอบการจองห้องพัก
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/hotel-booking/create` | Yes | สร้าง booking |
-| GET | `/hotel-booking/list` | Yes | ดึงรายการ booking ของ user |
-| GET | `/hotel-booking/:id` | Yes | ดึง booking รายการเดียว |
-| PATCH | `/hotel-booking/update/:id` | Yes | แก้ไข booking |
-| DELETE | `/hotel-booking/cancel/:id` | Yes | ยกเลิก booking |
+การทำงานหลัก:
 
-### Payment Service
+- สร้าง booking จาก hotel, room และ user ที่ login อยู่
+- รับข้อมูลจำนวนแขก, ระยะเวลาพัก, payment method, check-in และ check-out
+- ดึงรายการ booking ของ user
+- ดึง booking รายเดียว
+- แก้ไขข้อมูล booking
+- ยกเลิก booking
 
-จัดการข้อมูล payment card ของ user ต้องผ่าน authentication ทุก endpoint
+Flow สำคัญ:
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/payment/create` | Yes | สร้าง payment method |
-| GET | `/payment/list` | Yes | ดึงรายการ payment method, optional query `user_id` |
-| GET | `/payment/:id` | Yes | ดึง payment method ตาม id |
-| PATCH | `/payment/update/:id` | Yes | แก้ไข payment method |
-| DELETE | `/payment/delete/:id` | Yes | ลบ payment method |
+1. User เลือก hotel และ room
+2. Client ส่งข้อมูลการเข้าพัก เช่น guestCount, stayPeriod, checkInDate และ checkOutDate
+3. Service สร้าง booking โดยผูกกับ user จาก token
+4. เมื่อยกเลิก booking ระบบเปลี่ยนสถานะเป็น cancelled
 
-## Common Enum Values
-
-### CommonStatus
-
-- `active`
-- `inactive`
-- `pending`
-- `deleted`
-
-### HotelRoomStatus
-
-- `available`
-- `unavailable`
-- `maintenance`
-- `out_of_order`
-
-### HotelRoomType
-
-- `single`
-- `double`
-- `king`
-- `queen`
-- `suite`
-
-### HotelRoomAmenities
-
-- `wifi`
-- `tv`
-- `air_conditioning`
-- `minibar`
-- `safe`
-- `private_bathroom`
-- `private_balcony`
-- `private_terrace`
-
-### RoomPolicyType
-
-- `pets`
-- `children`
-- `smoking`
-- `adults`
-
-### HotelBookingStatus
+สถานะ booking ที่ระบบรองรับ:
 
 - `booked`
 - `awaiting_payment`
@@ -275,23 +169,66 @@ Login API จะ return `accessToken` กลับมาในรูปแบบ
 - `completed`
 - `expired`
 
-### PaymentMethod
+### Payment Service
 
-- `credit_card`
-- `debit_card`
-- `paypal`
-- `bank_transfer`
-- `cash`
+Payment Service จัดการข้อมูลวิธีชำระเงินของ user
 
-### PaymentStatus
+การทำงานหลัก:
 
-- `pending`
-- `paid`
-- `failed`
-- `refunded`
+- สร้าง payment method ให้ user ที่ login อยู่
+- ดึงรายการ payment method
+- ดึง payment method รายเดียว
+- แก้ไข payment method
+- ลบ payment method
 
-## Notes
+ข้อมูล payment ที่ service รองรับ:
 
-- TypeORM currently uses `synchronize: true`, which is convenient during development but should be reviewed before production deployment.
-- Some GET endpoints read filters from request body, for example `ids`, `hotel_id`, or `geo_ids`. Check Swagger at `/api` for DTO details.
-- Do not store real card data, database passwords, JWT secrets, or other credentials in README, examples, tests, or committed files.
+- card number
+- card holder name
+- card expiry month
+- card expiry year
+- card CVV
+
+หมายเหตุ: เอกสารนี้ไม่ใส่ตัวอย่างเลขบัตรหรือข้อมูลชำระเงินจริง และไม่ควรเก็บข้อมูลบัตรจริงใน repository หรือเอกสาร
+
+## ความสัมพันธ์ของข้อมูลหลัก
+
+- User มี Role ได้หนึ่ง role
+- User มี Address ได้หนึ่งรายการ
+- User มี Booking ได้หลายรายการ
+- User มี Review ได้หลายรายการ
+- User มี Payment ได้หลายรายการ
+- Hotel มี Address ได้หนึ่งรายการ
+- Hotel มี Room ได้หลายรายการ
+- Hotel มี Review ได้หลายรายการ
+- Hotel มี Booking ได้หลายรายการ
+- Room อยู่ภายใต้ Hotel
+- Booking ผูก User, Hotel และ Room
+- Review ผูก User และ Hotel
+- Payment ผูก User
+
+## Authentication
+
+Service ที่ต้องใช้ token จะอ่าน user จาก JWT payload ผ่าน guard และ custom token decorator
+
+Service ที่เป็น protected domain:
+
+- User APIs บางส่วน เช่น create, list, update, delete
+- Hotel Review Service
+- Hotel Booking Service
+- Payment Service
+
+Service ที่เปิดให้เรียกโดยไม่ใช้ token ตาม controller ปัจจุบัน:
+
+- Register/Login
+- Role Service
+- Hotel Service
+- Hotel Room Service
+- Address Service
+
+## หมายเหตุการใช้งาน
+
+- หลาย service ใช้ soft delete โดยเปลี่ยน status แทนการลบข้อมูลจริง
+- บาง list API รับรายการ id หรือ filter ผ่าน request body แม้จะเป็น HTTP GET
+- Swagger ในโปรเจกต์สามารถใช้ดู DTO และ request schema เพิ่มเติมได้
+- เอกสารนี้ตั้งใจอธิบาย behavior ของ service เท่านั้น จึงไม่รวม credential, secret, environment variable หรือค่าตั้งค่าระบบจริง
