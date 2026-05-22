@@ -4,7 +4,7 @@ import { AddressEntity } from './address.entity';
 import { HotelRoomEntity } from './hotel-room.entity';
 import { HotelReviewEntity } from './hotel-review.entity';
 import { BookingEntity } from './booking.entity';
-import { CommonStatus } from 'src/enum/common.status';
+import { CommonStatus } from '../enum/common.status';
 
 @Entity('hotel')
 export class HotelEntity extends TemplateEntity {

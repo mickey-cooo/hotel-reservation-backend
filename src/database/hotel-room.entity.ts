@@ -5,6 +5,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import {
   HotelRoomAmenities,
@@ -13,6 +14,7 @@ import {
   RoomPolicyType,
 } from '../enum/hotel-room.status';
 import { HotelEntity } from './hotel.entity';
+import { BookingEntity } from './booking.entity';
 
 @Entity('hotel_room')
 export class HotelRoomEntity extends TemplateEntity {
@@ -59,4 +61,7 @@ export class HotelRoomEntity extends TemplateEntity {
   @ManyToOne(() => HotelEntity, (hotel) => hotel.rooms)
   @JoinColumn({ name: 'hotel_id' })
   hotel?: HotelEntity;
+
+  @OneToMany(() => BookingEntity, (booking) => booking.hotelRoom)
+  bookings?: BookingEntity[];
 }

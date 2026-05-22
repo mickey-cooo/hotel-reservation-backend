@@ -4,9 +4,22 @@ import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import { PaymentMethod, PaymentStatus } from '../enum/common.status';
 import { UserEntity } from './user.entity';
 import { HotelEntity } from './hotel.entity';
+import { HotelRoomEntity } from './hotel-room.entity';
 
 @Entity('booking')
 export class BookingEntity extends TemplateEntity {
+  @Column({ type: 'varchar', nullable: true })
+  bookingCode: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  bookingDate: Date;
+
+  @Column({ type: 'integer', nullable: true })
+  guestCount: number;
+
+  @Column({ type: 'integer', nullable: true })
+  stayPeriod: number;
+
   @Column({ type: 'integer', nullable: true })
   totalPrice: number;
 
@@ -34,6 +47,9 @@ export class BookingEntity extends TemplateEntity {
   @Column({ type: 'integer', nullable: true })
   paymentAmount: number;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  expiredDate: Date;
+
   @ManyToOne(() => UserEntity, (user) => user.bookings)
   @JoinColumn({ name: 'user_id' })
   user?: UserEntity;
@@ -41,4 +57,8 @@ export class BookingEntity extends TemplateEntity {
   @ManyToOne(() => HotelEntity, (hotel) => hotel.bookings)
   @JoinColumn({ name: 'hotel_id' })
   hotel?: HotelEntity;
+
+  @ManyToOne(() => HotelRoomEntity, (hotelRoom) => hotelRoom.bookings)
+  @JoinColumn({ name: 'hotel_room_id' })
+  hotelRoom?: HotelRoomEntity;
 }
