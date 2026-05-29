@@ -10,6 +10,7 @@ import { HotelReviewModule } from './hotel-review/hotel-review.module';
 import { HotelBookingModule } from './hotel-booking/hotel-booking.module';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentLogModule } from './payment-log/payment-log.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PaymentLogModule } from './payment-log/payment-log.module';
     HotelBookingModule,
     PaymentModule,
     PaymentLogModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
