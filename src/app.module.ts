@@ -9,6 +9,7 @@ import { AddressModule } from './address/address.module';
 import { HotelReviewModule } from './hotel-review/hotel-review.module';
 import { HotelBookingModule } from './hotel-booking/hotel-booking.module';
 import { PaymentModule } from './payment/payment.module';
+import { PaymentLogModule } from './payment-log/payment-log.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PaymentModule } from './payment/payment.module';
     HotelReviewModule,
     HotelBookingModule,
     PaymentModule,
+    PaymentLogModule,
   ],
 })
 export class AppModule {}
