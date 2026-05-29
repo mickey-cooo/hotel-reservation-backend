@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm';
+import { Column, DeleteDateColumn, Entity } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 
 @Entity('payment_log')
@@ -23,4 +23,7 @@ export class PaymentLogEntity extends TemplateEntity {
 
   @Column({ type: 'varchar', nullable: true })
   userId: string;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt: Date;
 }
