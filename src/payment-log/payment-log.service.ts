@@ -1,13 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { PaymentLogEntity } from '../database/payment-log.entity';
 import { CreatePaymentLogBodyDto } from './dto/create-payment-log.dto';
 import { UpdatePaymentLogBodyDto } from './dto/update-payment-log.dto';
+import {
+  ListParamsPaymentLogDto,
+  ParamPaymentLogDto,
+} from './dto/params.payment-log.dto';
 
 @Injectable()
 export class PaymentLogService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(PaymentLogEntity)
     private readonly paymentLogRepository: Repository<PaymentLogEntity>,
   ) {}
@@ -31,7 +36,7 @@ export class PaymentLogService {
     }
   }
 
-  async findAll(body: any) {
+  async findAll(body: ListParamsPaymentLogDto) {
     try {
       const paymentLogs = await this.paymentLogRepository
         .createQueryBuilder('pl')
@@ -47,7 +52,7 @@ export class PaymentLogService {
     }
   }
 
-  async findById(param: any) {
+  async findById(param: ParamPaymentLogDto) {
     try {
       const paymentLog = await this.paymentLogRepository
         .createQueryBuilder('pl')
@@ -62,11 +67,15 @@ export class PaymentLogService {
     }
   }
 
-  async update(id: string, body: UpdatePaymentLogBodyDto) {
+  async update(param: ParamPaymentLogDto, body: UpdatePaymentLogBodyDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
       const existing = await this.paymentLogRepository
         .createQueryBuilder('pl')
-        .where('pl.id = :id', { id })
+        .where('pl.id = :id', { id: param.id })
         .getOne();
 
       if (!existing) {
@@ -77,24 +86,31 @@ export class PaymentLogService {
         .createQueryBuilder('pl')
         .update(PaymentLogEntity)
         .set({ ...body })
-        .where('id = :id', { id })
+        .where('id = :id', { id: param.id })
         .execute();
 
       if (!result?.affected) {
         throw new BadRequestException('Failed to update payment log');
       }
 
+      await queryRunner.commitTransaction();
       return result;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 
-  async softDelete(id: string) {
+  async delete(param: ParamPaymentLogDto) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
       const existing = await this.paymentLogRepository
         .createQueryBuilder('pl')
-        .where('pl.id = :id', { id })
+        .where('pl.id = :id', { id: param.id })
         .getOne();
 
       if (!existing) {
@@ -105,16 +121,20 @@ export class PaymentLogService {
         .createQueryBuilder('pl')
         .update(PaymentLogEntity)
         .set({ deletedAt: new Date() })
-        .where('id = :id', { id })
+        .where('id = :id', { id: param.id })
         .execute();
 
       if (!result?.affected) {
         throw new BadRequestException('Failed to delete payment log');
       }
 
+      await queryRunner.commitTransaction();
       return result;
     } catch (error) {
+      await queryRunner.rollbackTransaction();
       throw new Error(error);
+    } finally {
+      await queryRunner.release();
     }
   }
 }
