@@ -6,6 +6,7 @@ import { AddressEntity } from 'src/database/address.entity';
 import { JwtService } from '@nestjs/jwt';
 import { CommonStatus } from 'src/enum/common.status';
 import { NotFoundException } from '@nestjs/common';
+import { CreateBodyUserDto } from './dto/create-user.dto';
 
 describe('UserService', () => {
   let service: UserService;
@@ -20,6 +21,20 @@ describe('UserService', () => {
 
   const jwtService = {
     sign: jest.fn(),
+  };
+
+  const createUserBody: CreateBodyUserDto = {
+    firstName: { th: 'จอห์น', en: 'John' },
+    lastName: { th: 'โด', en: 'Doe' },
+    phoneNumber: '1234567890',
+    addressDetail: {
+      country: 'United States',
+      province: 'California',
+      district: 'Los Angeles',
+      subDistrict: 'West Los Angeles',
+      postalCode: '90001',
+      detail: '123 Main St',
+    },
   };
 
   beforeEach(async () => {
@@ -58,31 +73,17 @@ describe('UserService', () => {
 
     userRepository.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
 
-    const body: any = {
-      firstName: 'John',
-      lastName: 'Doe',
-      phoneNumber: '1234567890',
-      address: {
-        country: 'United States',
-        province: 'California',
-        district: 'Los Angeles',
-        subDistrict: 'West Los Angeles',
-        postalCode: '90001',
-        detail: '123 Main St',
-      },
-    };
-
-    const result = await service.createUser(body);
+    const result = await service.createUser(createUserBody);
 
     expect(result.message).toBe('User created successfully');
     expect(result.data).toEqual({ raw: { affected: 1 } });
     expect(userRepository.createQueryBuilder).toHaveBeenCalledWith();
     expect(queryBuilder.insert).toHaveBeenCalledWith(
       expect.objectContaining({
-        firstName: body.firstName,
-        lastName: body.lastName,
-        phoneNumber: body.phoneNumber,
-        address: body.address,
+        firstName: createUserBody.firstName,
+        lastName: createUserBody.lastName,
+        phoneNumber: createUserBody.phoneNumber,
+        address: createUserBody.addressDetail,
         status: CommonStatus.ACTIVE,
       }),
     );
@@ -97,7 +98,7 @@ describe('UserService', () => {
 
       userRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
-      await expect(service.createUser({} as any)).rejects.toThrow(Error);
+      await expect(service.createUser(createUserBody)).rejects.toThrow(Error);
     });
 
     it('findOneUser: returns success message and data', async () => {
