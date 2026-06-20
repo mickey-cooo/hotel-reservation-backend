@@ -11,7 +11,10 @@ import { HotelEntity } from '../database/hotel.entity';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus, PaymentStatus } from '../enum/common.status';
 import { HotelRoomStatus } from '../enum/hotel-room.status';
-import { HotelBookingParamsDto } from './dto/hotel-booking-params.dto';
+import {
+  AvailableHotelBookingParamsDto,
+  HotelBookingParamsDto,
+} from './dto/hotel-booking-params.dto';
 import { UpdateHotelBookingBodyDto } from './dto/update-hotel-booking.dto';
 import { HotelBookingStatus } from '../enum/hotel.booking.status';
 
@@ -52,6 +55,7 @@ export class HotelBookingService {
         body.guestCount,
         body.stayPeriod,
       );
+
       const hotelBooking = await this.hotelBookingRepository
         .createQueryBuilder()
         .insert()
@@ -68,7 +72,6 @@ export class HotelBookingService {
           paymentStatus: PaymentStatus.PENDING,
           user: { id: user_id },
         })
-        .returning('*')
         .execute();
 
       if (!hotelBooking) {
@@ -222,13 +225,69 @@ export class HotelBookingService {
     }
   }
 
+  async completeHotelBooking(param: HotelBookingParamsDto, user_id: string) {
+    try {
+      const hotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder('hb')
+        .where('hb.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+        .andWhere('hb.user_id = :user_id', { user_id: user_id })
+        .andWhere('hb.bookingCode = :bookingCode', {
+          bookingCode: param.bookingCode,
+        })
+        .getOne();
+
+      if (!hotelBooking) {
+        throw new NotFoundException('Hotel booking not found');
+      }
+
+      const completedHotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({ status: HotelBookingStatus.COMPLETED })
+        .where('id = :id', { id: hotelBooking.id })
+        .returning('*')
+        .execute();
+
+      if (!completedHotelBooking) {
+        throw new BadRequestException('Failed to complete hotel booking');
+      }
+
+      return completedHotelBooking.raw;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async availableHotelBooking(param: AvailableHotelBookingParamsDto) {
+    try {
+      const hotelRoomAvailability = await this.hotelRoomRepository
+        .createQueryBuilder('hr')
+        .innerJoinAndSelect('hr.hotel', 'h')
+        .innerJoinAndSelect('h.rooms', 'r')
+        .where('hr.id = :id', { id: param.room_id })
+        .andWhere('hr.deletedAt IS NULL')
+        .andWhere('hr.status = :status', { status: HotelRoomStatus.AVAILABLE })
+        .andWhere('h.id = :hotel_id', { hotel_id: param.hotel_id })
+        .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+        .getRawOne();
+
+      if (!hotelRoomAvailability) {
+        throw new NotFoundException('Hotel room not found');
+      }
+
+      return hotelRoomAvailability;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
   private async generateBookingCode() {
     try {
       const bookingCode = await this.hotelBookingRepository
         .createQueryBuilder()
         .select('bookingCode')
         .orderBy('bookingCode', 'DESC')
-        .getRawOne();
+        .getOne();
 
       if (!bookingCode) {
         return 'HB00001';
@@ -272,6 +331,30 @@ export class HotelBookingService {
       }
 
       return totalPrice;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  private async generateTransactionId() {
+    try {
+      const transactionId = await this.hotelBookingRepository
+        .createQueryBuilder()
+        .select('transactionId')
+        .orderBy('transactionId', 'DESC')
+        .getOne();
+
+      if (!transactionId) {
+        return 'TXN00001';
+      }
+
+      const lastTransactionId = transactionId.paymentTransactionId;
+
+      const lastTransactionIdNumber = lastTransactionId.replace('TXN', '');
+
+      const nextTransactionIdNumber = parseInt(lastTransactionIdNumber) + 1;
+
+      return `TXN${nextTransactionIdNumber.toString().padStart(5, '0')}`;
     } catch (error) {
       throw new Error(error);
     }

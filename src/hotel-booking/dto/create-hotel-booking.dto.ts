@@ -33,6 +33,11 @@ export class CreateHotelBookingBodyDto {
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
 
+  // @ApiProperty()
+  // @IsOptional()
+  // @IsString()
+  // transactionId: string;
+
   @ApiProperty()
   @IsNotEmpty()
   @IsDate()

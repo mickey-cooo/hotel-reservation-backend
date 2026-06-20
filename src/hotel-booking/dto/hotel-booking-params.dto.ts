@@ -34,3 +34,15 @@ export class HotelBookingParamDto {
   @IsOptional()
   user_id: string;
 }
+
+export class AvailableHotelBookingParamsDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  hotel_id: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  room_id: string;
+}
