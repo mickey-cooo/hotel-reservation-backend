@@ -1,0 +1,47 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
+
+@Injectable()
+export class MailService {
+  private readonly resend: Resend;
+  private readonly logger = new Logger(MailService.name);
+  private readonly fromAddress: string;
+
+  constructor(private readonly configService: ConfigService) {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    this.resend = new Resend(apiKey);
+    this.fromAddress =
+      this.configService.get<string>('RESEND_FROM') ?? 'onboarding@resend.dev';
+  }
+
+  async sendOtp(to: string, otp: string): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.fromAddress,
+      to,
+      subject: 'Your verification code',
+      html: `<p>Your OTP code is <strong>${otp}</strong>. It expires in 5 minutes.</p>`,
+    });
+
+    if (error) {
+      this.logger.error(`Failed to send OTP to ${to}: ${error.message}`);
+      throw new Error(error.message);
+    }
+  }
+
+  async sendResetPasswordMail(to: string, link: string): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.fromAddress,
+      to,
+      subject: 'Reset Password Link',
+      html: `<p>Hello,<p><p>You've requested to reset your password. Click on the following link to reset your password:</p><p><strong>${link}</strong></p><p>If you didn't request this, please ignore this email.</p><p>Thank you.</p>`,
+    });
+
+    if (error) {
+      this.logger.error(
+        `Failed to send reset password link to ${to}: ${error.message}`,
+      );
+      throw new Error(error.message);
+    }
+  }
+}

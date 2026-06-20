@@ -27,4 +27,4 @@ async function bootstrap() {
   console.log(`Application is running on: ${process.env.PORT}`);
   // logger.log(`Application is running on: ${process.env.PORT ?? 3000}`);
 }
-bootstrap();
+void bootstrap();

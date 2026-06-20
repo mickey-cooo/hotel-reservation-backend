@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { AddressEntity } from './address.entity';
 import { HotelRoomEntity } from './hotel-room.entity';
@@ -29,7 +29,7 @@ export class HotelEntity extends TemplateEntity {
   @Column({ type: 'enum', enum: CommonStatus, nullable: true })
   status: CommonStatus;
 
-  @OneToOne(() => AddressEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => AddressEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'address_id' })
   address?: AddressEntity;
 

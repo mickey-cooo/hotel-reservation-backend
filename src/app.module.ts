@@ -12,6 +12,7 @@ import { PaymentModule } from './payment/payment.module';
 import { PaymentLogModule } from './payment-log/payment-log.module';
 import { ChatModule } from './chat/chat.module';
 import { RedisCacheModule } from './cache/redis-cache.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RedisCacheModule } from './cache/redis-cache.module';
       }),
     }),
     RedisCacheModule,
+    MailModule,
     ...modules,
     RoleModule,
     HotelModule,

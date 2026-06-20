@@ -12,10 +12,14 @@ import { UserService } from './user.service';
 import { CreateBodyUserDto } from './dto/create-user.dto';
 import { BodyUserIdsDto, ParamUserDto } from './dto/user-param.dto';
 import { UpdateBodyUserDto } from './dto/update-user.dto';
-import { LoginBodyDto, RegisterBodyDto } from './dto/authenticate.dto';
+import {
+  LoginBodyDto,
+  RegisterBodyDto,
+  VerifyOtpBodyDto,
+} from './dto/authenticate.dto';
 import { Token } from '../decorator/token.decorator';
-import { AuthGuard } from 'src/guard/auth.guard';
-import { TokenPayload } from 'src/helper/app.const';
+import { AuthGuard } from '../guard/auth.guard';
+import { TokenPayload } from '../helper/app.const';
 
 @Controller('user')
 export class UserController {
@@ -24,6 +28,11 @@ export class UserController {
   @Post('/register')
   async register(@Body() body: RegisterBodyDto) {
     return this.userService.register(body);
+  }
+
+  @Post('/verify-otp')
+  async verifyOtp(@Body() body: VerifyOtpBodyDto) {
+    return this.userService.verifyOtp(body);
   }
 
   @Post('/login')

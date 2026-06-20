@@ -19,3 +19,9 @@ export enum PaymentMethod {
   BANK_TRANSFER = 'bank_transfer',
   CASH = 'cash',
 }
+
+export enum ResetPasswordStatus {
+  PENDING = 'pending',
+  COMPLETED = 'completed',
+  EXPIRED = 'expired',
+}

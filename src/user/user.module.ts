@@ -7,10 +7,11 @@ import { AddressEntity } from '../database/address.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConfigModule } from '@nestjs/config';
+import { ResetPasswordEntity } from '../database/reset-password.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity, AddressEntity]),
+    TypeOrmModule.forFeature([UserEntity, AddressEntity, ResetPasswordEntity]),
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],

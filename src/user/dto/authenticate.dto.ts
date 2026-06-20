@@ -31,3 +31,15 @@ export class LoginBodyDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class VerifyOtpBodyDto {
+  @ApiProperty()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}

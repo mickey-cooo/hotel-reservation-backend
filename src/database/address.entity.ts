@@ -1,4 +1,4 @@
-import { Column, DeleteDateColumn, Entity, OneToOne } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, OneToMany } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { UserEntity } from './user.entity';
 import { HotelEntity } from './hotel.entity';
@@ -26,9 +26,9 @@ export class AddressEntity extends TemplateEntity {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deletedAt: Date;
 
-  @OneToOne(() => UserEntity, (user) => user.address)
-  user?: UserEntity;
+  @OneToMany(() => UserEntity, (user) => user.address)
+  users?: UserEntity[];
 
-  @OneToOne(() => HotelEntity, (hotel) => hotel.address)
-  hotel?: HotelEntity;
+  @OneToMany(() => HotelEntity, (hotel) => hotel.address)
+  hotels?: HotelEntity[];
 }

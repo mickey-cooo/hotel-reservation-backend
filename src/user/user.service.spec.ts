@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UserEntity } from 'src/database/user.entity';
-import { AddressEntity } from 'src/database/address.entity';
+import { UserEntity } from '../database/user.entity';
+import { AddressEntity } from '../database/address.entity';
 import { JwtService } from '@nestjs/jwt';
-import { CommonStatus } from 'src/enum/common.status';
+import { CommonStatus } from '../enum/common.status';
 import { NotFoundException } from '@nestjs/common';
 import { CreateBodyUserDto } from './dto/create-user.dto';
 
