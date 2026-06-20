@@ -50,6 +50,7 @@ export class HotelBookingService {
       }
 
       const generatedBookingCode = await this.generateBookingCode();
+      const generatedTransactionId = await this.generateTransactionId();
       const totalPrice = await this.calculateTotalPrice(
         body.room_id,
         body.guestCount,
@@ -63,6 +64,7 @@ export class HotelBookingService {
           hotel: { id: hotel.id },
           hotelRoom: { id: body.room_id },
           bookingCode: generatedBookingCode,
+          paymentTransactionId: generatedTransactionId,
           totalPrice: totalPrice,
           checkInDate: body.checkInDate,
           checkOutDate: body.checkOutDate,
