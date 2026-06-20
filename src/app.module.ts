@@ -11,6 +11,7 @@ import { HotelBookingModule } from './hotel-booking/hotel-booking.module';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentLogModule } from './payment-log/payment-log.module';
 import { ChatModule } from './chat/chat.module';
+import { RedisCacheModule } from './cache/redis-cache.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChatModule } from './chat/chat.module';
         // logging: true,
       }),
     }),
+    RedisCacheModule,
     ...modules,
     RoleModule,
     HotelModule,

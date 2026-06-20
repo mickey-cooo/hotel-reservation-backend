@@ -7,9 +7,11 @@ import { ProvinceEntity } from '../database/province.entity';
 import { AmphurEntity } from '../database/amhur.entity';
 import { DistrictEntity } from '../database/district.entity';
 import { GeographyEntity } from '../database/geography.entity';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
+    CacheModule.register(),
     TypeOrmModule.forFeature([
       AddressEntity,
       ProvinceEntity,

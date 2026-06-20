@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AddressEntity } from 'src/database/address.entity';
@@ -27,6 +28,10 @@ import { GeographyEntity } from '../database/geography.entity';
 import { ProvinceEntity } from '../database/province.entity';
 import { DistrictEntity } from '../database/district.entity';
 import { AmphurEntity } from '../database/amhur.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+
+const CACHE_FOREVER = 0;
 
 @Injectable()
 export class AddressService {
@@ -42,6 +47,12 @@ export class AddressService {
     private readonly districtRepository: Repository<DistrictEntity>,
     @InjectRepository(AmphurEntity)
     private readonly amphurRepository: Repository<AmphurEntity>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache & {
+      get: Cache['get'];
+      set: Cache['set'];
+      del: Cache['del'];
+    },
   ) {}
 
   async createAddress(body: CreateAddressBodyDto): Promise<{
@@ -67,10 +78,10 @@ export class AddressService {
         throw new BadRequestException('Failed to create address');
       }
 
-      return {
-        message: 'Address created successfully',
-        data: createdAddress.raw[0],
-      };
+      const data: AddressInterface = createdAddress.raw[0];
+      await this.cacheManager.set(`address:${data.id}`, data, CACHE_FOREVER);
+
+      return { message: 'Address created successfully', data };
     } catch (error) {
       throw new Error(error);
     }
@@ -81,6 +92,12 @@ export class AddressService {
     data: AddressInterface;
   }> {
     try {
+      const cacheKey = `address:${param.id}`;
+      const cached = await this.cacheManager.get<AddressInterface>(cacheKey);
+      if (cached) {
+        return { message: 'Address found successfully', data: cached };
+      }
+
       const currentAddress = await this.addressRepository
         .createQueryBuilder('a')
         .where('a.id = :id', { id: param.id })
@@ -90,10 +107,9 @@ export class AddressService {
         throw new NotFoundException('Address not found');
       }
 
-      return {
-        message: 'Address found successfully',
-        data: currentAddress,
-      };
+      await this.cacheManager.set(cacheKey, currentAddress, CACHE_FOREVER);
+
+      return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
       throw new Error(error);
     }
@@ -104,6 +120,12 @@ export class AddressService {
     data: AddressInterface[];
   }> {
     try {
+      const cacheKey = `address:all:${[...body.ids].sort().join(',')}`;
+      const cached = await this.cacheManager.get<AddressInterface[]>(cacheKey);
+      if (cached) {
+        return { message: 'Address found successfully', data: cached };
+      }
+
       const currentAddress = await this.addressRepository
         .createQueryBuilder('a')
         .whereInIds(body.ids)
@@ -114,10 +136,9 @@ export class AddressService {
         throw new NotFoundException('Address not found');
       }
 
-      return {
-        message: 'Address found successfully',
-        data: currentAddress,
-      };
+      await this.cacheManager.set(cacheKey, currentAddress, CACHE_FOREVER);
+
+      return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
       throw new Error(error);
     }
@@ -127,6 +148,11 @@ export class AddressService {
     body: GeographyBodyParamsDto,
   ): Promise<GeographyInterface[]> {
     try {
+      const cacheKey = `geography:all:${[...body.geo_ids].sort().join(',')}`;
+      const cached =
+        await this.cacheManager.get<GeographyInterface[]>(cacheKey);
+      if (cached) return cached;
+
       const currentGeography = await this.geographyRepository
         .createQueryBuilder('g')
         .whereInIds(body.geo_ids)
@@ -136,6 +162,8 @@ export class AddressService {
         throw new NotFoundException('Geography not found');
       }
 
+      await this.cacheManager.set(cacheKey, currentGeography, CACHE_FOREVER);
+
       return currentGeography;
     } catch (error) {
       throw new Error(error);
@@ -144,6 +172,10 @@ export class AddressService {
 
   async findOneProvince(param: ProvinceParamDto): Promise<ProvinceInterface> {
     try {
+      const cacheKey = `province:${param.id}`;
+      const cached = await this.cacheManager.get<ProvinceInterface>(cacheKey);
+      if (cached) return cached;
+
       const currentProvince = await this.provinceRepository
         .createQueryBuilder('p')
         .where('p.province_id = :province_id', {
@@ -163,6 +195,8 @@ export class AddressService {
         throw new NotFoundException('Province not found');
       }
 
+      await this.cacheManager.set(cacheKey, currentProvince, CACHE_FOREVER);
+
       return currentProvince;
     } catch (error) {
       throw new Error(error);
@@ -173,6 +207,10 @@ export class AddressService {
     param: DistrictParamDto,
   ): Promise<DistrictInterface> {
     try {
+      const cacheKey = `district:${param.district_id}:province:${param.province_id}:geo:${param.geo_id}`;
+      const cached = await this.cacheManager.get<DistrictInterface>(cacheKey);
+      if (cached) return cached;
+
       const currentDistrict = await this.districtRepository
         .createQueryBuilder('d')
         .where('d.district_id = :district_id', {
@@ -200,6 +238,8 @@ export class AddressService {
         throw new NotFoundException('District not found');
       }
 
+      await this.cacheManager.set(cacheKey, currentDistrict, CACHE_FOREVER);
+
       return currentDistrict;
     } catch (error) {
       throw new Error(error);
@@ -208,6 +248,10 @@ export class AddressService {
 
   async findAmphurByProvince(param: AmphurParamDto): Promise<AmphurInterface> {
     try {
+      const cacheKey = `amphur:${param.province_id}`;
+      const cached = await this.cacheManager.get<AmphurInterface>(cacheKey);
+      if (cached) return cached;
+
       const currentAmphur = await this.amphurRepository
         .createQueryBuilder('a')
         .where('a.amphur_id = :amphur_id', { amphur_id: param.province_id })
@@ -229,6 +273,8 @@ export class AddressService {
       if (!currentAmphur) {
         throw new NotFoundException('Amphur not found');
       }
+
+      await this.cacheManager.set(cacheKey, currentAmphur, CACHE_FOREVER);
 
       return currentAmphur;
     } catch (error) {
@@ -280,7 +326,10 @@ export class AddressService {
         throw new BadRequestException('Failed to update address');
       }
 
-      return updatedAddress.raw[0];
+      const data: AddressInterface = updatedAddress.raw[0];
+      await this.cacheManager.set(`address:${param.id}`, data, CACHE_FOREVER);
+
+      return data;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw new Error(error);
@@ -306,9 +355,7 @@ export class AddressService {
       const deletedAddress = await this.addressRepository
         .createQueryBuilder()
         .update(AddressEntity)
-        .set({
-          deletedAt: new Date(),
-        })
+        .set({ deletedAt: new Date() })
         .where('id = :id', { id: param.id })
         .returning('*')
         .execute();
@@ -316,6 +363,8 @@ export class AddressService {
       if (!deletedAddress) {
         throw new BadRequestException('Failed to delete address');
       }
+
+      await this.cacheManager.del(`address:${param.id}`);
 
       return deletedAddress.raw ?? null;
     } catch (error) {
