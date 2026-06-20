@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import {
   ChatMessage,
   ChatRoomSnapshot,
@@ -7,6 +6,7 @@ import {
   ChatUser,
 } from './interface/chat.interface';
 import { JoinRoomDto, SendMessageDto, TypingDto } from './dto/chat-message.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ChatRoomState {
   users: Map<string, ChatUser>;
@@ -67,7 +67,7 @@ export class ChatService {
   createMessage(body: SendMessageDto): ChatMessage {
     const room = this.getOrCreateRoom(body.roomId);
     const message: ChatMessage = {
-      id: randomUUID(),
+      id: uuidv4(),
       roomId: body.roomId,
       userId: body.userId,
       displayName: body.displayName,

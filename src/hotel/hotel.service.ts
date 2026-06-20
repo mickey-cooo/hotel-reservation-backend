@@ -11,8 +11,11 @@ import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus } from '../enum/common.status';
 import { BodyHotelIdsDto, ParamHotelDto } from './dto/hotel-params.dto';
-import { AddressService } from 'src/address/address.service';
+import { AddressService } from '../address/address.service';
+import { AddressInterface } from '../address/interface/address.interface';
 import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
+import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.interface';
+
 @Injectable()
 export class HotelService {
   constructor(
@@ -197,7 +200,7 @@ export class HotelService {
         throw new BadRequestException('Failed to update hotel');
       }
 
-      let updatedHotelRooms: any;
+      let updatedHotelRooms: HotelRoomDataInterface[] | undefined;
       if (body.rooms?.length) {
         const currentRoomIds = new Set(
           currentHotel.rooms?.map((room) => room.id),
@@ -221,7 +224,7 @@ export class HotelService {
         }
       }
 
-      let updatedAddress: any;
+      let updatedAddress: AddressInterface | undefined;
       if (body.addressDetail) {
         if (!currentHotel.address?.id) {
           throw new BadRequestException('Address not found');
