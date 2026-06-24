@@ -42,26 +42,32 @@ export class HotelRoomService {
         throw new NotFoundException('Hotel not found');
       }
 
-      const createdHotelRooms = await this.hotelRoomRepository
-        .createQueryBuilder()
-        .insert()
-        .into(HotelRoomEntity)
-        .values(
-          body.rooms.map((item) => ({
-            ...item,
-            hotel,
-          })),
-        )
-        .returning('*')
-        .execute();
+      // const createdHotelRooms = await this.hotelRoomRepository
+      //   .createQueryBuilder()
+      //   .insert()
+      //   .into(HotelRoomEntity)
+      //   .values(
+      //     body.rooms.map((item) => ({
+      //       ...item,
+      //       hotel,
+      //     })),
+      //   )
+      //   .returning('*')
+      //   .execute();
+      const hotelRoomData = body.rooms.map((item) => ({
+        ...item,
+        hotel,
+      }));
+      const createdHotelRooms =
+        await this.hotelRoomRepository.save(hotelRoomData);
 
       if (!createdHotelRooms) {
         throw new BadRequestException('Failed to create hotel room');
       }
 
-      return createdHotelRooms.raw;
+      return createdHotelRooms;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -76,12 +82,12 @@ export class HotelRoomService {
         .getRawMany();
 
       if (!hotelRooms) {
-        throw new NotFoundException('Hotel rooms not found');
+        return [];
       }
 
       return hotelRooms;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -104,7 +110,7 @@ export class HotelRoomService {
         hotel_id: hotelRoom.hotel?.id || '',
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -114,7 +120,7 @@ export class HotelRoomService {
   ): Promise<HotelRoomDataInterface> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
+
     try {
       const hotelRoom = await this.hotelRoomRepository
         .createQueryBuilder('hr')
@@ -126,6 +132,7 @@ export class HotelRoomService {
         throw new NotFoundException('Hotel room not found');
       }
 
+      await queryRunner.startTransaction();
       const updatedHotelRoom = await this.hotelRoomRepository
         .createQueryBuilder()
         .update(HotelRoomEntity)
@@ -151,10 +158,13 @@ export class HotelRoomService {
       if (!updatedHotelRoom) {
         throw new BadRequestException('Failed to update hotel room');
       }
+
+      await queryRunner.commitTransaction();
+
       return updatedHotelRoom.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -192,7 +202,7 @@ export class HotelRoomService {
       return;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -228,7 +238,7 @@ export class HotelRoomService {
         hotel_id: hotelRoom.hotel?.id || '',
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 }

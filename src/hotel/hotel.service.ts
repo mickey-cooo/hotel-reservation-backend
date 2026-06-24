@@ -15,6 +15,8 @@ import { AddressService } from '../address/address.service';
 import { AddressInterface } from '../address/interface/address.interface';
 import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
 import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.interface';
+import { PaginationQueryDto } from '../pagination/dto/pagination.dto';
+import { PaginationService } from '../pagination/pagination.service';
 
 @Injectable()
 export class HotelService {
@@ -26,6 +28,7 @@ export class HotelService {
     private readonly hotelRoomService: HotelRoomService,
     private readonly addressService: AddressService,
     private readonly dataSource: DataSource,
+    private readonly paginationService: PaginationService,
   ) {}
 
   async createHotel(body: CreateHotelBodyDto) {
@@ -61,8 +64,6 @@ export class HotelService {
           throw new BadRequestException('Failed to create address');
         }
 
-        console.log(createdAddress.data.id);
-
         const updatedHotelAddress = await this.hotelRepository
           .createQueryBuilder()
           .update(HotelEntity)
@@ -87,9 +88,10 @@ export class HotelService {
         });
 
         if (!createdHotelRooms?.length) {
-          throw new BadRequestException('Failed to create hotel rooms');
+          return [];
         }
       }
+
       return {
         message: 'Hotel created successfully',
         data: {
@@ -97,7 +99,7 @@ export class HotelService {
         },
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -120,32 +122,26 @@ export class HotelService {
         data: currentHotel,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
-  async findAllHotel(body: BodyHotelIdsDto) {
+  async findAllHotel(body: BodyHotelIdsDto, query: PaginationQueryDto) {
     try {
-      const hotels = await this.hotelRepository
+      const hotel = this.hotelRepository
         .createQueryBuilder('h')
         .innerJoinAndSelect('h.rooms', 'r')
         .innerJoinAndSelect('h.address', 'a')
         .whereInIds(body.ids)
         .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
         .andWhere('r.deletedAt IS NULL')
-        .andWhere('a.deletedAt IS NULL')
-        .getMany();
+        .andWhere('a.deletedAt IS NULL');
 
-      if (!hotels) {
-        throw new NotFoundException('Hotels not found');
-      }
+      if (!hotel) return [];
 
-      return {
-        message: 'Hotels found successfully',
-        data: hotels,
-      };
+      return await this.paginationService.paginate(query, hotel);
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -168,7 +164,13 @@ export class HotelService {
         throw new NotFoundException('Hotel not found');
       }
 
-      if (currentHotel.name === body.name) {
+      const existHotels = await this.hotelRepository
+        .createQueryBuilder('h')
+        .where('h.id != :id', { id: param.id })
+        .andWhere('h.name = :name', { name: body.name })
+        .getOne();
+
+      if (existHotels) {
         throw new BadRequestException('Hotel name already exists');
       }
 
@@ -220,7 +222,7 @@ export class HotelService {
         );
 
         if (!updatedHotelRooms) {
-          throw new BadRequestException('Failed to update hotel rooms');
+          return [];
         }
       }
 
@@ -239,6 +241,8 @@ export class HotelService {
         }
       }
 
+      await queryRunner.commitTransaction();
+
       return {
         message: 'Hotel updated successfully',
         data: {
@@ -249,7 +253,7 @@ export class HotelService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -301,7 +305,7 @@ export class HotelService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }

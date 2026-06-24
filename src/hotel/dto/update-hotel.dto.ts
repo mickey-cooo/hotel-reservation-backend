@@ -7,8 +7,8 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { UpdateHotelRoomBodyDto } from 'src/hotel-room/dto/update-hotel-room.dto';
-import { AddressDto } from 'src/user/dto/address.dto';
+import { UpdateHotelRoomBodyDto } from '../../hotel-room/dto/update-hotel-room.dto';
+import { AddressDto } from '../../user/dto/address.dto';
 
 export class UpdateHotelRoomInHotelDto extends UpdateHotelRoomBodyDto {
   @ApiProperty()

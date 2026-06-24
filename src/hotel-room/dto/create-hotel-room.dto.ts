@@ -14,7 +14,7 @@ import {
   HotelRoomStatus,
   HotelRoomType,
   RoomPolicyType,
-} from 'src/enum/hotel-room.status';
+} from '../../enum/hotel-room.status';
 
 export class CreateHotelRoomBodyDto {
   @ApiProperty()

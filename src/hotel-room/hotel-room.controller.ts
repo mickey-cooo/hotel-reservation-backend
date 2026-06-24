@@ -6,14 +6,17 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { HotelRoomService } from './hotel-room.service';
 import { CreateManyHotelRoomBodyDto } from './dto/create-hotel-room.dto';
 import { HotelRoomDataInterface } from './interface/hotel-room.interface';
 import { HotelRoomBodyParamsDto } from './dto/hotel-room-params.dto';
 import { UpdateHotelRoomBodyDto } from './dto/update-hotel-room.dto';
+import { AuthGuard } from '../guard/auth.guard';
 
 @Controller('/hotel-room')
+@UseGuards(AuthGuard)
 export class HotelRoomController {
   constructor(private readonly hotelRoomService: HotelRoomService) {}
 

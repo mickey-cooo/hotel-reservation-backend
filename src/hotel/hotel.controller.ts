@@ -6,13 +6,18 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { HotelService } from './hotel.service';
 import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { BodyHotelIdsDto, ParamHotelDto } from './dto/hotel-params.dto';
 import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
+import { PaginationQueryDto } from '../pagination/dto/pagination.dto';
+import { AuthGuard } from '../guard/auth.guard';
 
 @Controller('/hotel')
+@UseGuards(AuthGuard)
 export class HotelController {
   constructor(private readonly hotelService: HotelService) {}
 
@@ -22,8 +27,11 @@ export class HotelController {
   }
 
   @Get('/list')
-  async findAllHotel(@Body() body: BodyHotelIdsDto) {
-    return await this.hotelService.findAllHotel(body);
+  async findAllHotel(
+    @Body() body: BodyHotelIdsDto,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return await this.hotelService.findAllHotel(body, query);
   }
 
   @Get('/:id')
