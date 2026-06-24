@@ -36,6 +36,19 @@ export default defineConfig(
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
+      'no-useless-catch': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^src/',
+              message:
+                'Use relative imports (./ or ../) instead of src/ paths.',
+            },
+          ],
+        },
+      ],
       'prettier/prettier': [
         'error',
         {
