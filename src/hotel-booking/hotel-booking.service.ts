@@ -17,6 +17,9 @@ import {
 } from './dto/hotel-booking-params.dto';
 import { UpdateHotelBookingBodyDto } from './dto/update-hotel-booking.dto';
 import { HotelBookingStatus } from '../enum/hotel.booking.status';
+import { MailService } from '../mail/mail.service';
+import { RefundBookingBodyDto } from './dto/refund-booking.dto';
+import { PaymentLogEntity } from '../database/payment-log.entity';
 
 @Injectable()
 export class HotelBookingService {
@@ -28,6 +31,7 @@ export class HotelBookingService {
     @InjectRepository(HotelEntity)
     private readonly hotelRepository: Repository<HotelEntity>,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
 
   async createHotelBooking(body: CreateHotelBookingBodyDto, user_id: string) {
@@ -43,6 +47,20 @@ export class HotelBookingService {
         .andWhere('r.capacity >= :guest_count', {
           guest_count: body.guestCount,
         })
+        .andWhere(
+          `NOT EXISTS (
+            SELECT 1 FROM booking b
+            WHERE b.hotel_room_id = r.id
+              AND b.status NOT IN (:...cancelledStatuses)
+              AND b.check_in_date < :check_out_date
+              AND b.check_out_date > :check_in_date
+          )`,
+          {
+            cancelledStatuses: [HotelBookingStatus.CANCELLED],
+            check_in_date: body.checkInDate,
+            check_out_date: body.checkOutDate,
+          },
+        )
         .getOne();
 
       if (!hotel) {
@@ -70,9 +88,11 @@ export class HotelBookingService {
           checkOutDate: body.checkOutDate,
           guestCount: body.guestCount,
           stayPeriod: body.stayPeriod,
+          status: HotelBookingStatus.AWAITING_PAYMENT,
           paymentMethod: body.paymentMethod,
           paymentStatus: PaymentStatus.PENDING,
           user: { id: user_id },
+          expiredDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
         })
         .execute();
 
@@ -80,9 +100,28 @@ export class HotelBookingService {
         throw new BadRequestException('Failed to create hotel booking');
       }
 
+      const hotelRoomStatus = await this.hotelRoomRepository
+        .createQueryBuilder('hb')
+        .update(HotelRoomEntity)
+        .set({ status: HotelRoomStatus.UNAVAILABLE })
+        .where('id = :id', { id: body.room_id })
+        .returning('*')
+        .execute();
+
+      if (!hotelRoomStatus) {
+        throw new BadRequestException('Failed to update hotel room status');
+      }
+
+      const link = `${process.env.FRONTEND_BASE_URL}/hotel-booking/detail/${hotelBooking.raw.bookingCode}`;
+
+      await this.mailService.sendHotelBookingMail(
+        hotelBooking.raw.email,
+        link,
+        hotelBooking.raw,
+      );
       return hotelBooking.raw;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -95,12 +134,12 @@ export class HotelBookingService {
         .getMany();
 
       if (!hotelBookings) {
-        throw new NotFoundException('Hotel bookings not found');
+        return [];
       }
 
       return hotelBookings;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -121,7 +160,7 @@ export class HotelBookingService {
 
       return hotelBooking;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -132,7 +171,6 @@ export class HotelBookingService {
   ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
     try {
       const currentHotelBooking = await this.hotelBookingRepository
         .createQueryBuilder('hb')
@@ -147,6 +185,7 @@ export class HotelBookingService {
         throw new NotFoundException('Hotel booking not found');
       }
 
+      await queryRunner.startTransaction();
       const updatedHotelBooking = await this.hotelBookingRepository
         .createQueryBuilder()
         .update(BookingEntity)
@@ -164,7 +203,46 @@ export class HotelBookingService {
       return updatedHotelBooking.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async bookingConfirm(paymentTransactionId: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    try {
+      const hotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder('hb')
+        .where('hb.paymentTransactionId = :paymentTransactionId', {
+          paymentTransactionId: paymentTransactionId,
+        })
+        .getOne();
+
+      if (!hotelBooking) {
+        throw new NotFoundException('Hotel booking not found');
+      }
+
+      await queryRunner.startTransaction();
+      const updatedHotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({ status: HotelBookingStatus.CONFIRMED })
+        .where('id = :id', { id: hotelBooking.id })
+        .returning('*')
+        .execute();
+
+      if (!updatedHotelBooking) {
+        throw new BadRequestException('Failed to update hotel booking');
+      }
+
+      await queryRunner.commitTransaction();
+
+      return updatedHotelBooking.raw;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -173,7 +251,6 @@ export class HotelBookingService {
   async cancelHotelBooking(param: HotelBookingParamsDto, user_id: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
     try {
       const hotelBooking = await this.hotelBookingRepository
         .createQueryBuilder('hb')
@@ -188,6 +265,7 @@ export class HotelBookingService {
         throw new NotFoundException('Hotel booking not found');
       }
 
+      await queryRunner.startTransaction();
       const cancelledHotelBooking = await this.hotelBookingRepository
         .createQueryBuilder()
         .update(BookingEntity)
@@ -216,14 +294,56 @@ export class HotelBookingService {
         throw new BadRequestException('Failed to cancel hotel booking');
       }
 
+      const link = `${process.env.FRONTEND_BASE_URL}/hotel-booking/detail/${cancelledHotelBooking.raw.bookingCode}`;
+      await this.mailService.sendHotelBookingMail(
+        cancelledHotelBooking.raw.user.email,
+        link,
+        cancelledHotelBooking.raw.bookingCode,
+      );
+
       await queryRunner.commitTransaction();
 
       return cancelledHotelBooking.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  async confirmHotelBooking(param: HotelBookingParamsDto) {
+    try {
+      const hotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder('hb')
+        .where('hb.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+        .andWhere('hb.bookingCode = :bookingCode', {
+          bookingCode: param.bookingCode,
+        })
+        .andWhere('hb.status = :status', {
+          status: HotelBookingStatus.AWAITING_CONFIRMATION,
+        })
+        .getOne();
+
+      if (!hotelBooking) {
+        throw new NotFoundException('Hotel booking not found ');
+      }
+
+      const confirmedHotelBooking = await this.hotelBookingRepository
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({ status: HotelBookingStatus.CONFIRMED })
+        .where('id = :id', { id: hotelBooking.id })
+        .returning('*')
+        .execute();
+
+      if (!confirmedHotelBooking) {
+        throw new BadRequestException('Failed to confirm hotel booking');
+      }
+
+      return confirmedHotelBooking.raw;
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -235,6 +355,12 @@ export class HotelBookingService {
         .andWhere('hb.user_id = :user_id', { user_id: user_id })
         .andWhere('hb.bookingCode = :bookingCode', {
           bookingCode: param.bookingCode,
+        })
+        .andWhere('hb.paymentStatus = :paymentStatus', {
+          paymentStatus: PaymentStatus.PAID,
+        })
+        .andWhere('hb.status = :status', {
+          status: HotelBookingStatus.CONFIRMED,
         })
         .getOne();
 
@@ -254,9 +380,16 @@ export class HotelBookingService {
         throw new BadRequestException('Failed to complete hotel booking');
       }
 
+      const link = `${process.env.FRONTEND_BASE_URL}/hotel-booking/detail/${completedHotelBooking.raw.bookingCode}`;
+      await this.mailService.sendHotelBookingMail(
+        completedHotelBooking.raw.user.email,
+        link,
+        completedHotelBooking.raw.bookingCode,
+      );
+
       return completedHotelBooking.raw;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -279,32 +412,117 @@ export class HotelBookingService {
 
       return hotelRoomAvailability;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
-  private async generateBookingCode() {
+  async cancelAndRefund(body: RefundBookingBodyDto, user_id: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      const bookingCode = await this.hotelBookingRepository
-        .createQueryBuilder()
-        .select('bookingCode')
-        .orderBy('bookingCode', 'DESC')
+      const booking = await queryRunner.manager
+        .createQueryBuilder(BookingEntity, 'b')
+        .leftJoinAndSelect('b.user', 'user')
+        .leftJoinAndSelect('b.hotel', 'hotel')
+        .leftJoinAndSelect('b.hotelRoom', 'hotelRoom')
+        .where('b.id = :id', { id: body.bookingId })
+        .andWhere('b.user_id = :userId', { userId: user_id })
         .getOne();
 
-      if (!bookingCode) {
-        return 'HB00001';
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+      const cancellableStatuses = [
+        HotelBookingStatus.BOOKED,
+        HotelBookingStatus.AWAITING_PAYMENT,
+        HotelBookingStatus.AWAITING_CONFIRMATION,
+        HotelBookingStatus.CONFIRMED,
+      ];
+
+      if (!cancellableStatuses.includes(booking.status)) {
+        throw new BadRequestException(
+          `Booking with status "${booking.status}" cannot be cancelled`,
+        );
       }
 
-      const lastBookingCode = bookingCode.bookingCode;
+      if (booking.expiredDate && booking.expiredDate < new Date()) {
+        throw new BadRequestException(
+          `Booking "${booking.bookingCode}" is expired, cannot be cancelled`,
+        );
+      }
 
-      const lastBookingCodeNumber = lastBookingCode.replace('HB', '');
+      const isRefundable = booking.paymentStatus === PaymentStatus.PAID;
 
-      const nextBookingCodeNumber = parseInt(lastBookingCodeNumber) + 1;
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({
+          status: HotelBookingStatus.CANCELLED,
+          ...(isRefundable && { paymentStatus: PaymentStatus.REFUNDED }),
+        })
+        .where('id = :id', { id: booking.id })
+        .execute();
 
-      return `HB${nextBookingCodeNumber.toString().padStart(5, '0')}`;
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(PaymentLogEntity)
+        .values({
+          action: isRefundable ? 'refund' : 'cancel',
+          transactionId: booking.paymentTransactionId,
+          hotelId: booking.hotel?.id,
+          hotelRoomId: booking.hotelRoom?.id,
+          hotelBookingId: booking.id,
+          userId: user_id,
+          log: JSON.stringify({
+            reason: body.reason,
+            previousStatus: booking.status,
+            previousPaymentStatus: booking.paymentStatus,
+            refundAmount: isRefundable ? booking.paymentAmount : 0,
+          }),
+        })
+        .execute();
+
+      await queryRunner.commitTransaction();
+
+      const link = `${process.env.FRONTEND_BASE_URL}/hotel-booking/detail/${booking.bookingCode}`;
+      const updatedBooking = {
+        ...booking,
+        status: HotelBookingStatus.CANCELLED,
+        paymentStatus: isRefundable
+          ? PaymentStatus.REFUNDED
+          : booking.paymentStatus,
+      } as BookingEntity;
+      await this.mailService.sendHotelBookingMail(
+        booking.user!.email,
+        link,
+        updatedBooking,
+      );
+
+      return {
+        bookingId: booking.id,
+        status: HotelBookingStatus.CANCELLED,
+        paymentStatus: isRefundable
+          ? PaymentStatus.REFUNDED
+          : booking.paymentStatus,
+        refundAmount: isRefundable ? booking.paymentAmount : 0,
+      };
     } catch (error) {
-      throw new Error(error);
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
+  }
+
+  private async generateBookingCode(): Promise<string> {
+    const result = await this.hotelBookingRepository.query(
+      `SELECT nextval('booking_code_seq') AS val`,
+    );
+    const num = parseInt(result[0].val, 10);
+    return `HB${num.toString().padStart(5, '0')}`;
   }
 
   private async calculateTotalPrice(
@@ -334,7 +552,7 @@ export class HotelBookingService {
 
       return totalPrice;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -358,7 +576,7 @@ export class HotelBookingService {
 
       return `TXN${nextTransactionIdNumber.toString().padStart(5, '0')}`;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 }
