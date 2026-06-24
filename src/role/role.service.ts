@@ -41,7 +41,7 @@ export class RoleService {
         data: role,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -62,7 +62,7 @@ export class RoleService {
         data: roles,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -83,7 +83,7 @@ export class RoleService {
         data: currentRole,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -124,7 +124,7 @@ export class RoleService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -165,7 +165,7 @@ export class RoleService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }

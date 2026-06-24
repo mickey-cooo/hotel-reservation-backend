@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AddressEntity } from 'src/database/address.entity';
+import { AddressEntity } from '../database/address.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CreateAddressBodyDto } from './dto/create-address.dto';
 import {
@@ -83,7 +83,7 @@ export class AddressService {
 
       return { message: 'Address created successfully', data };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -111,7 +111,7 @@ export class AddressService {
 
       return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -140,7 +140,7 @@ export class AddressService {
 
       return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -166,7 +166,7 @@ export class AddressService {
 
       return currentGeography;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -199,7 +199,7 @@ export class AddressService {
 
       return currentProvince;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -242,7 +242,7 @@ export class AddressService {
 
       return currentDistrict;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -278,7 +278,7 @@ export class AddressService {
 
       return currentAmphur;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -329,10 +329,12 @@ export class AddressService {
       const data: AddressInterface = updatedAddress.raw[0];
       await this.cacheManager.set(`address:${param.id}`, data, CACHE_FOREVER);
 
+      await queryRunner.commitTransaction();
+
       return data;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -369,7 +371,7 @@ export class AddressService {
       return deletedAddress.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }

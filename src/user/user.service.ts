@@ -64,7 +64,7 @@ export class UserService {
         data: createUser,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -100,7 +100,7 @@ export class UserService {
         data: currentUser,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -136,7 +136,7 @@ export class UserService {
         data: currentUser,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -243,7 +243,7 @@ export class UserService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -284,7 +284,7 @@ export class UserService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -337,7 +337,7 @@ export class UserService {
         data: null,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -377,7 +377,7 @@ export class UserService {
         data: null,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -416,7 +416,7 @@ export class UserService {
         accessToken: `Bearer ${token}`,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -480,7 +480,7 @@ export class UserService {
         data: null,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -515,7 +515,7 @@ export class UserService {
         data: null,
       };
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 }

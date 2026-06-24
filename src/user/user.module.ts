@@ -8,6 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ConfigModule } from '@nestjs/config';
 import { ResetPasswordEntity } from '../database/reset-password.entity';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ResetPasswordEntity } from '../database/reset-password.entity';
         },
       }),
     }),
+    MailModule,
   ],
   controllers: [UserController],
   providers: [UserService],
