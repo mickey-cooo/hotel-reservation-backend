@@ -4,3 +4,9 @@ export enum CancellableStatus {
   AWAITING_CONFIRMATION = 'awaiting_confirmation',
   CONFIRMED = 'confirmed',
 }
+
+export enum StripeEnum {
+  PAYMENT = 'payment',
+  SETUP = 'setup',
+  SUBSCRIPTION = 'subscription',
+}
