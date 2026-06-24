@@ -8,11 +8,10 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/guard/auth.guard';
+import { AuthGuard } from '../guard/auth.guard';
 import { PaymentService } from './payment.service';
 import { CreatePaymentBodyDto } from './dto/create-payment.dto';
 import { UpdatePaymentBodyDto } from './dto/update-payment.dto';
-import { CancelRefundBodyDto } from './dto/cancel-refund.dto';
 import {
   ParamPaymentIdDto,
   ParamPaymentQueryDto,
@@ -21,6 +20,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { Token } from '../decorator/token.decorator';
 import { TokenPayload } from '../helper/app.const';
+
 @ApiTags('Payment')
 @UseGuards(AuthGuard)
 @Controller('payment')
@@ -56,13 +56,5 @@ export class PaymentController {
   @Delete('/delete/:id')
   async delete(@Param() param: ParamPaymentIdDto) {
     return await this.paymentService.delete(param);
-  }
-
-  @Post('/cancel-refund')
-  async cancelAndRefund(
-    @Body() body: CancelRefundBodyDto,
-    @Token() token: TokenPayload,
-  ) {
-    return await this.paymentService.cancelAndRefund(body, token.id);
   }
 }

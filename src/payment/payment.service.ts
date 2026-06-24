@@ -10,8 +10,7 @@ import { BookingEntity } from '../database/booking.entity';
 import { PaymentEntity } from '../database/payment.entity';
 import { PaymentLogEntity } from '../database/payment-log.entity';
 import { UserEntity } from '../database/user.entity';
-import { CommonStatus, PaymentStatus } from '../enum/common.status';
-import { HotelBookingStatus } from '../enum/hotel.booking.status';
+import { CommonStatus } from '../enum/common.status';
 import { CreatePaymentBodyDto } from './dto/create-payment.dto';
 import { UpdatePaymentBodyDto } from './dto/update-payment.dto';
 import { PaymentResponse } from './interface/payment.interface';
@@ -19,17 +18,10 @@ import {
   ParamPaymentIdDto,
   ParamPaymentQueryDto,
 } from './dto/payment-params.dto';
-import { CancelRefundBodyDto } from './dto/cancel-refund.dto';
 
 @Injectable()
 export class PaymentService {
   private readonly saltRounds = 10;
-  private readonly cancellableStatuses: readonly HotelBookingStatus[] = [
-    HotelBookingStatus.BOOKED,
-    HotelBookingStatus.AWAITING_PAYMENT,
-    HotelBookingStatus.AWAITING_CONFIRMATION,
-    HotelBookingStatus.CONFIRMED,
-  ];
 
   constructor(
     private readonly dataSource: DataSource,
@@ -105,7 +97,7 @@ export class PaymentService {
 
       return createdPayment.raw[0];
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -136,7 +128,7 @@ export class PaymentService {
 
       return payments;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -150,7 +142,7 @@ export class PaymentService {
 
       return payment;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -205,7 +197,7 @@ export class PaymentService {
 
       return updatedPayment.raw[0];
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -237,79 +229,7 @@ export class PaymentService {
 
       return deletedPayment.raw[0];
     } catch (error) {
-      throw new Error(error);
-    }
-  }
-
-  async cancelAndRefund(body: CancelRefundBodyDto, user_id: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const booking = await queryRunner.manager
-        .createQueryBuilder(BookingEntity, 'b')
-        .where('b.id = :id', { id: body.bookingId })
-        .andWhere('b.user_id = :userId', { userId: user_id })
-        .getOne();
-
-      if (!booking) {
-        throw new NotFoundException('Booking not found');
-      }
-
-      if (!this.cancellableStatuses.includes(booking.status)) {
-        throw new BadRequestException(
-          `Booking with status "${booking.status}" cannot be cancelled`,
-        );
-      }
-
-      const isRefundable = booking.paymentStatus === PaymentStatus.PAID;
-
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(BookingEntity)
-        .set({
-          status: HotelBookingStatus.CANCELLED,
-          ...(isRefundable && { paymentStatus: PaymentStatus.REFUNDED }),
-        })
-        .where('id = :id', { id: booking.id })
-        .execute();
-
-      await queryRunner.manager
-        .createQueryBuilder()
-        .insert()
-        .into(PaymentLogEntity)
-        .values({
-          action: isRefundable ? 'refund' : 'cancel',
-          transactionId: booking.paymentTransactionId,
-          hotelId: booking.hotel?.id,
-          hotelRoomId: booking.hotelRoom?.id,
-          hotelBookingId: booking.id,
-          userId: user_id,
-          log: JSON.stringify({
-            reason: body.reason,
-            previousStatus: booking.status,
-            previousPaymentStatus: booking.paymentStatus,
-            refundAmount: isRefundable ? booking.paymentAmount : 0,
-          }),
-        })
-        .execute();
-
-      await queryRunner.commitTransaction();
-
-      return {
-        bookingId: booking.id,
-        status: HotelBookingStatus.CANCELLED,
-        paymentStatus: isRefundable
-          ? PaymentStatus.REFUNDED
-          : booking.paymentStatus,
-        refundAmount: isRefundable ? booking.paymentAmount : 0,
-      };
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
       throw error;
-    } finally {
-      await queryRunner.release();
     }
   }
 

@@ -32,7 +32,7 @@ export class PaymentLogService {
 
       return paymentLog;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -48,7 +48,7 @@ export class PaymentLogService {
       }
       return paymentLogs;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -63,7 +63,7 @@ export class PaymentLogService {
       }
       return paymentLog;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -97,7 +97,7 @@ export class PaymentLogService {
       return result;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -132,7 +132,7 @@ export class PaymentLogService {
       return result;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
