@@ -4,10 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HotelReviewEntity } from 'src/database/hotel-review.entity';
+import { HotelReviewEntity } from '../database/hotel-review.entity';
+import { BookingEntity } from '../database/booking.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CreateHotelReviewBodyDto } from './dto/create-hotel-review.dto';
 import { HotelService } from '../hotel/hotel.service';
+import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import {
   HotelReviewParamDto,
   HotelReviewParamsDto,
@@ -24,6 +26,8 @@ export class HotelReviewService {
   constructor(
     @InjectRepository(HotelReviewEntity)
     private readonly hotelReviewRepository: Repository<HotelReviewEntity>,
+    @InjectRepository(BookingEntity)
+    private readonly bookingRepository: Repository<BookingEntity>,
     private readonly hotelService: HotelService,
     private readonly dataSource: DataSource,
   ) {}
@@ -41,6 +45,21 @@ export class HotelReviewService {
         throw new NotFoundException('Hotel not found');
       }
 
+      const completedBooking = await this.bookingRepository
+        .createQueryBuilder('b')
+        .where('b.hotel_id = :hotel_id', { hotel_id: body.hotel_id })
+        .andWhere('b.user_id = :user_id', { user_id: userId })
+        .andWhere('b.status = :status', {
+          status: HotelBookingStatus.COMPLETED,
+        })
+        .getOne();
+
+      if (!completedBooking) {
+        throw new BadRequestException(
+          'You must have a completed booking to review this hotel',
+        );
+      }
+
       const newHotelReview = await this.hotelReviewRepository
         .createQueryBuilder()
         .insert()
@@ -51,6 +70,7 @@ export class HotelReviewService {
           description: body.description,
           rating: body.rating,
           isAnonymous: body.isAnonymous,
+          isReply: body.isReply,
           createdBy: userId,
           createdAt: new Date(),
         })
@@ -72,7 +92,7 @@ export class HotelReviewService {
 
       return newHotelReview.raw;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -99,13 +119,11 @@ export class HotelReviewService {
         ])
         .getMany();
 
-      if (!hotelReviews) {
-        throw new NotFoundException('Hotel reviews not found');
-      }
+      if (!hotelReviews) return [];
 
       return hotelReviews;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -138,7 +156,7 @@ export class HotelReviewService {
 
       return hotelReview;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 
@@ -162,6 +180,12 @@ export class HotelReviewService {
         throw new NotFoundException('Hotel review not found');
       }
 
+      if (hotelReview.createdBy !== userId) {
+        throw new BadRequestException(
+          'You are not authorized to update this hotel review',
+        );
+      }
+
       const updatedHotelReview = await this.hotelReviewRepository
         .createQueryBuilder()
         .update(HotelReviewEntity)
@@ -174,10 +198,12 @@ export class HotelReviewService {
         throw new BadRequestException('Failed to update hotel review');
       }
 
+      await queryRunner.commitTransaction();
+
       return updatedHotelReview.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -185,6 +211,7 @@ export class HotelReviewService {
 
   async deleteHotelReview(
     param: HotelReviewParamDto,
+    userId: string,
   ): Promise<HotelReviewInterface> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -201,6 +228,12 @@ export class HotelReviewService {
         throw new NotFoundException('Hotel review not found');
       }
 
+      if (hotelReview.createdBy !== userId) {
+        throw new BadRequestException(
+          'You are not authorized to delete this hotel review',
+        );
+      }
+
       const deletedHotelReview = await this.hotelReviewRepository
         .createQueryBuilder()
         .update(HotelReviewEntity)
@@ -214,11 +247,12 @@ export class HotelReviewService {
       if (!deletedHotelReview) {
         throw new BadRequestException('Failed to delete hotel review');
       }
+      await queryRunner.commitTransaction();
 
       return deletedHotelReview.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw new Error(error);
+      throw error;
     } finally {
       await queryRunner.release();
     }
@@ -243,7 +277,7 @@ export class HotelReviewService {
       const updatedHotelReview = await this.hotelReviewRepository
         .createQueryBuilder()
         .update(HotelReviewEntity)
-        .set({ ...body, replyBy: userId, replyDate: new Date() })
+        .set({ ...body, createdBy: userId, createdAt: new Date() })
         .where('id = :id', { id: hotelReview.id })
         .returning(['reviewDate', 'isReply', 'reply', 'replyBy', 'replyDate'])
         .execute();
@@ -254,7 +288,7 @@ export class HotelReviewService {
 
       return updatedHotelReview.raw;
     } catch (error) {
-      throw new Error(error);
+      throw error;
     }
   }
 }

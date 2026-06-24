@@ -35,4 +35,8 @@ export class CreateHotelReviewBodyDto {
   @IsNotEmpty()
   @IsBoolean()
   isAnonymous: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  isReply: boolean;
 }

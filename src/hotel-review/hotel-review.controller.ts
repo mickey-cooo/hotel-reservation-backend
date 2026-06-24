@@ -67,7 +67,10 @@ export class HotelReviewController {
   }
 
   @Delete('/:id/hotel/:hotel_id')
-  async deleteHotelReview(@Param() param: HotelReviewParamDto) {
-    return await this.hotelReviewService.deleteHotelReview(param);
+  async deleteHotelReview(
+    @Param() param: HotelReviewParamDto,
+    @Token() token: TokenPayload,
+  ) {
+    return await this.hotelReviewService.deleteHotelReview(param, token.id);
   }
 }

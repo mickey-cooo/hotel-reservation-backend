@@ -23,17 +23,8 @@ export class HotelReviewEntity extends TemplateEntity {
   @Column({ type: 'boolean', nullable: true })
   isAnonymous: boolean;
 
-  @Column({ type: 'timestamptz', nullable: true })
-  reviewDate: Date;
-
-  @Column({ type: 'jsonb', nullable: true })
-  reply: string;
-
   @Column({ type: 'boolean', nullable: true })
   isReply: boolean;
-
-  @Column({ type: 'varchar', nullable: true })
-  replyBy: string;
 
   @Column({ type: 'timestamptz', nullable: true })
   replyDate: Date;
