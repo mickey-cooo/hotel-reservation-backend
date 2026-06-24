@@ -41,6 +41,6 @@ export class ResetPasswordEntity extends TemplateEntity {
   @ManyToOne(() => UserEntity, (user) => user.resetPasswords, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'user_uuid', referencedColumnName: 'uuid' })
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: UserEntity;
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import { BookingEntity } from '../database/booking.entity';
 
 @Injectable()
 export class MailService {
@@ -40,6 +41,40 @@ export class MailService {
     if (error) {
       this.logger.error(
         `Failed to send reset password link to ${to}: ${error.message}`,
+      );
+      throw new Error(error.message);
+    }
+  }
+
+  async sendHotelBookingMail(
+    to: string,
+    link: string,
+    hotelBooking: BookingEntity,
+  ): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.fromAddress,
+      to,
+      subject: 'Hotel Booking Confirmation',
+      html: `
+        <h1>Hotel Booking Confirmation</h1>
+        <p>Hotel Name: ${hotelBooking?.hotel?.name}</p>
+        <p>Hotel Address: ${hotelBooking?.hotel?.address?.detail}</p>
+        <p>Hotel Phone: ${hotelBooking?.hotel?.phoneNumber}</p>
+        <p>Hotel Email: ${hotelBooking?.hotel?.email}</p>
+        <p>Check-in: ${hotelBooking?.checkInDate.toISOString()}</p>
+        <p>Check-out: ${hotelBooking?.checkOutDate.toISOString()}</p>
+        <p>Number of Guests: ${hotelBooking?.guestCount}</p>
+        <p>Total Price: ${hotelBooking.totalPrice}</p>
+        <p>Status: ${hotelBooking.status}</p>
+        <p>Booking Code: ${hotelBooking.bookingCode}</p>
+        <p>Payment Transaction Id: ${hotelBooking.paymentTransactionId}</p>
+        <p>Thank you.</p>
+      `,
+    });
+
+    if (error) {
+      this.logger.error(
+        `Failed to send hotel booking confirmation to ${to}: ${error.message}`,
       );
       throw new Error(error.message);
     }

@@ -25,3 +25,9 @@ export enum ResetPasswordStatus {
   COMPLETED = 'completed',
   EXPIRED = 'expired',
 }
+
+export enum Role {
+  ADMIN = 'admin',
+  CLIENT = 'client',
+  HOTEL_OWNER = 'hotel_owner',
+}

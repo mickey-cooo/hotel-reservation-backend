@@ -13,12 +13,16 @@ import { PaymentLogModule } from './payment-log/payment-log.module';
 import { ChatModule } from './chat/chat.module';
 import { RedisCacheModule } from './cache/redis-cache.module';
 import { MailModule } from './mail/mail.module';
+import { StripeModule } from './stripe/stripe.module';
+import { StripeEventsModule } from './stripe-events/stripe-events.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -46,6 +50,8 @@ import { MailModule } from './mail/mail.module';
     PaymentModule,
     PaymentLogModule,
     ChatModule,
+    StripeModule,
+    StripeEventsModule,
   ],
 })
 export class AppModule {}

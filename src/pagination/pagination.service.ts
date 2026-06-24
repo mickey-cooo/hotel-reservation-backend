@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { PaginationQueryDto } from './dto/pagination.dto';
 import { PaginatedResult } from './interface/pagination.interface';
 
@@ -6,15 +7,18 @@ import { PaginatedResult } from './interface/pagination.interface';
 export class PaginationService {
   constructor() {}
 
-  async paginate<T>(
+  async paginate<T extends ObjectLiteral>(
     queryInstance: PaginationQueryDto,
-    dbExecutor: (skip: number, take: number) => Promise<[T[], number]>,
+    qb: SelectQueryBuilder<T>,
   ): Promise<PaginatedResult<T>> {
     const page = queryInstance.page || 1;
     const limit = queryInstance.limit || 10;
     const skip = (page - 1) * limit;
 
-    const [data, totalItems] = await dbExecutor(skip, limit);
+    const [data, totalItems] = await qb
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
     const totalPages = Math.ceil(totalItems / limit);
 
     return {
