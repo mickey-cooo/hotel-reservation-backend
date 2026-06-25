@@ -2,9 +2,12 @@ import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type Stripe from 'stripe';
 import { DataSource, EntityManager, Repository } from 'typeorm';
+import { BookingEntity } from '../database/booking.entity';
 import { OrderEntity } from '../database/order.entity';
 import { PaymentTransactionEntity } from '../database/payment-transaction.entity';
 import { StripeEventEntity } from '../database/stripe-event.entity';
+import { HotelBookingStatus } from '../enum/hotel.booking.status';
+import { PaymentStatus } from '../enum/common.status';
 import { PaymentTransactionStatus } from '../enum/payment-transaction.status';
 
 @Injectable()
@@ -69,10 +72,11 @@ export class StripeEventsService {
   ): Promise<void> {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
+    const bookingId = session.metadata?.bookingId;
 
-    if (!orderId) {
+    if (!orderId || !bookingId) {
       throw new ConflictException(
-        `Missing orderId in metadata for session: ${session.id}`,
+        `Missing orderId or bookingId in metadata for session: ${session.id}`,
       );
     }
 
@@ -90,6 +94,17 @@ export class StripeEventsService {
       .update(OrderEntity)
       .set({ status: PaymentTransactionStatus.PAID, paidAt: now })
       .where('id = :orderId', { orderId })
+      .execute();
+
+    await manager
+      .createQueryBuilder()
+      .update(BookingEntity)
+      .set({
+        paymentStatus: PaymentStatus.PAID,
+        status: HotelBookingStatus.CONFIRMED,
+        paymentDate: now,
+      })
+      .where('id = :bookingId', { bookingId })
       .execute();
 
     await manager

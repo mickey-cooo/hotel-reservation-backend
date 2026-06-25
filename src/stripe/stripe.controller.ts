@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../guard/auth.guard';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
@@ -13,8 +20,10 @@ export class StripeController {
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create Stripe Checkout Session' })
-  @ApiCreatedResponse({ description: 'Returns Stripe session ID and redirect URL' })
-  createCheckoutSession(@Body() dto: CreateCheckoutSessionDto) {
+  @ApiCreatedResponse({
+    description: 'Returns Stripe session ID and redirect URL',
+  })
+  async createCheckoutSession(@Body() dto: CreateCheckoutSessionDto) {
     return this.stripeService.createCheckoutSession(dto);
   }
 }

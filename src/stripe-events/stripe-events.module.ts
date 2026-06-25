@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BookingEntity } from '../database/booking.entity';
 import { OrderEntity } from '../database/order.entity';
 import { PaymentTransactionEntity } from '../database/payment-transaction.entity';
 import { StripeEventEntity } from '../database/stripe-event.entity';
@@ -13,6 +14,7 @@ import { StripeEventsService } from './stripe-events.service';
       StripeEventEntity,
       PaymentTransactionEntity,
       OrderEntity,
+      BookingEntity,
     ]),
     StripeModule,
   ],
