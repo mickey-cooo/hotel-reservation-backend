@@ -294,6 +294,17 @@ export class HotelBookingService {
         throw new BadRequestException('Failed to cancel hotel booking');
       }
 
+      const hotelRoom = await this.hotelRoomRepository
+        .createQueryBuilder()
+        .update(HotelRoomEntity)
+        .set({ status: HotelRoomStatus.AVAILABLE })
+        .where('id = :id', { id: hotelBooking.hotelRoom?.id })
+        .execute();
+
+      if (!hotelRoom) {
+        throw new BadRequestException('Failed to update hotel room status');
+      }
+
       const link = `${process.env.FRONTEND_BASE_URL}/hotel-booking/detail/${cancelledHotelBooking.raw.bookingCode}`;
       await this.mailService.sendHotelBookingMail(
         cancelledHotelBooking.raw.user.email,
