@@ -3,10 +3,11 @@ import { CronService } from './cron.service';
 import { CronJobService } from './cron.job.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BookingEntity } from '../database/booking.entity';
+import { HotelRoomEntity } from '../database/hotel-room.entity';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([BookingEntity])],
+  imports: [TypeOrmModule.forFeature([BookingEntity, HotelRoomEntity])],
   providers: [CronService, CronJobService],
   exports: [CronService, CronJobService],
 })

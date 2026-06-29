@@ -24,10 +24,9 @@ export class CronJobService {
         status: HotelBookingStatus.AWAITING_PAYMENT,
       })
       .andWhere('expired_date < :now', { now: new Date() })
-      .returning('*')
       .execute();
 
-    if (expiredBooking) {
+    if (expiredBooking.affected) {
       await this.hotelRoomRepository
         .createQueryBuilder()
         .update(HotelRoomEntity)
