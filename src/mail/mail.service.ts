@@ -57,17 +57,14 @@ export class MailService {
       subject: 'Hotel Booking Confirmation',
       html: `
         <h1>Hotel Booking Confirmation</h1>
-        <p>Hotel Name: ${hotelBooking?.hotel?.name}</p>
-        <p>Hotel Address: ${hotelBooking?.hotel?.address?.detail}</p>
-        <p>Hotel Phone: ${hotelBooking?.hotel?.phoneNumber}</p>
-        <p>Hotel Email: ${hotelBooking?.hotel?.email}</p>
-        <p>Check-in: ${hotelBooking?.checkInDate.toISOString()}</p>
-        <p>Check-out: ${hotelBooking?.checkOutDate.toISOString()}</p>
+        <p>Check-in: ${hotelBooking?.checkInDate?.toISOString()}</p>
+        <p>Check-out: ${hotelBooking?.checkOutDate?.toISOString()}</p>
         <p>Number of Guests: ${hotelBooking?.guestCount}</p>
         <p>Total Price: ${hotelBooking.totalPrice}</p>
         <p>Status: ${hotelBooking.status}</p>
         <p>Booking Code: ${hotelBooking.bookingCode}</p>
         <p>Payment Transaction Id: ${hotelBooking.paymentTransactionId}</p>
+        <p>View booking: ${link}</p>
         <p>Thank you.</p>
       `,
     });
