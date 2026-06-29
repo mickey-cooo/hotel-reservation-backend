@@ -30,6 +30,8 @@ export class HotelBookingService {
     private readonly hotelRoomRepository: Repository<HotelRoomEntity>,
     @InjectRepository(HotelEntity)
     private readonly hotelRepository: Repository<HotelEntity>,
+    @InjectRepository(PaymentLogEntity)
+    private readonly paymentLogRepository: Repository<PaymentLogEntity>,
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
   ) {}
@@ -79,7 +81,6 @@ export class HotelBookingService {
         .createQueryBuilder()
         .insert()
         .values({
-          hotel: { id: hotel.id },
           hotelRoom: { id: body.room_id },
           bookingCode: generatedBookingCode,
           paymentTransactionId: generatedTransactionId,
@@ -129,7 +130,8 @@ export class HotelBookingService {
     try {
       const hotelBookings = await this.hotelBookingRepository
         .createQueryBuilder('hb')
-        .where('hb.hotel_id = :hotel_id', { hotel_id: params.hotel_id })
+        .innerJoinAndSelect('hb.hotelRoom', 'hr')
+        .where('hr.hotel_id = :hotel_id', { hotel_id: params.hotel_id })
         .andWhere('hb.user_id = :user_id', { user_id: user_id })
         .getMany();
 
@@ -147,7 +149,8 @@ export class HotelBookingService {
     try {
       const hotelBooking = await this.hotelBookingRepository
         .createQueryBuilder('hb')
-        .where('hb.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+        .innerJoin('hb.hotelRoom', 'hr')
+        .where('hr.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
         .andWhere('hb.user_id = :user_id', { user_id: user_id })
         .andWhere('hb.bookingCode = :bookingCode', {
           bookingCode: param.bookingCode,
@@ -174,7 +177,8 @@ export class HotelBookingService {
     try {
       const currentHotelBooking = await this.hotelBookingRepository
         .createQueryBuilder('hb')
-        .where('hb.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+        .innerJoin('hb.hotelRoom', 'hr')
+        .where('hr.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
         .andWhere('hb.user_id = :user_id', { user_id: user_id })
         .andWhere('hb.bookingCode = :bookingCode', {
           bookingCode: param.bookingCode,
@@ -404,6 +408,86 @@ export class HotelBookingService {
     }
   }
 
+  async checkInBooking(param: HotelBookingParamsDto) {
+    const booking = await this.hotelBookingRepository
+      .createQueryBuilder('hb')
+      .innerJoinAndSelect('hb.hotelRoom', 'hr')
+      .where('hr.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+      .andWhere('hb.bookingCode = :bookingCode', {
+        bookingCode: param.bookingCode,
+      })
+      .andWhere('hb.status = :status', {
+        status: HotelBookingStatus.CONFIRMED,
+      })
+      .getOne();
+
+    if (!booking) {
+      throw new NotFoundException(
+        'Booking not found or not in CONFIRMED status',
+      );
+    }
+
+    await Promise.all([
+      this.hotelBookingRepository
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({ status: HotelBookingStatus.CHECKED_IN })
+        .where('id = :id', { id: booking.id })
+        .execute(),
+      this.hotelRoomRepository
+        .createQueryBuilder()
+        .update(HotelRoomEntity)
+        .set({ status: HotelRoomStatus.UNAVAILABLE })
+        .where('id = :id', { id: booking.hotelRoom!.id })
+        .execute(),
+    ]);
+
+    return {
+      bookingCode: booking.bookingCode,
+      status: HotelBookingStatus.CHECKED_IN,
+    };
+  }
+
+  async checkOutBooking(param: HotelBookingParamsDto) {
+    const booking = await this.hotelBookingRepository
+      .createQueryBuilder('hb')
+      .innerJoinAndSelect('hb.hotelRoom', 'hr')
+      .where('hr.hotel_id = :hotel_id', { hotel_id: param.hotel_id })
+      .andWhere('hb.bookingCode = :bookingCode', {
+        bookingCode: param.bookingCode,
+      })
+      .andWhere('hb.status = :status', {
+        status: HotelBookingStatus.CHECKED_IN,
+      })
+      .getOne();
+
+    if (!booking) {
+      throw new NotFoundException(
+        'Booking not found or not in CHECKED_IN status',
+      );
+    }
+
+    await Promise.all([
+      this.hotelBookingRepository
+        .createQueryBuilder()
+        .update(BookingEntity)
+        .set({ status: HotelBookingStatus.CHECKED_OUT })
+        .where('id = :id', { id: booking.id })
+        .execute(),
+      this.hotelRoomRepository
+        .createQueryBuilder()
+        .update(HotelRoomEntity)
+        .set({ status: HotelRoomStatus.AVAILABLE })
+        .where('id = :id', { id: booking.hotelRoom!.id })
+        .execute(),
+    ]);
+
+    return {
+      bookingCode: booking.bookingCode,
+      status: HotelBookingStatus.CHECKED_OUT,
+    };
+  }
+
   async availableHotelBooking(param: AvailableHotelBookingParamsDto) {
     try {
       const hotelRoomAvailability = await this.hotelRoomRepository
@@ -483,7 +567,6 @@ export class HotelBookingService {
         .values({
           action: isRefundable ? 'refund' : 'cancel',
           transactionId: booking.paymentTransactionId,
-          hotelId: booking.hotel?.id,
           hotelRoomId: booking.hotelRoom?.id,
           hotelBookingId: booking.id,
           userId: user_id,

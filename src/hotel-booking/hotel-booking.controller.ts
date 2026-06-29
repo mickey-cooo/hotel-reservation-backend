@@ -66,6 +66,16 @@ export class HotelBookingController {
     return await this.hotelBookingService.confirmHotelBooking(param);
   }
 
+  @Patch('/check-in/:bookingCode')
+  async checkInBooking(@Param() param: HotelBookingParamsDto) {
+    return await this.hotelBookingService.checkInBooking(param);
+  }
+
+  @Patch('/check-out/:bookingCode')
+  async checkOutBooking(@Param() param: HotelBookingParamsDto) {
+    return await this.hotelBookingService.checkOutBooking(param);
+  }
+
   @Patch('/refund-cancel')
   async refundCancelHotelBooking(
     @Body() body: RefundBookingBodyDto,
