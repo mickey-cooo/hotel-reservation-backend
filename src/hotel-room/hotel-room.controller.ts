@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { HotelRoomService } from './hotel-room.service';
 import { CreateManyHotelRoomBodyDto } from './dto/create-hotel-room.dto';
@@ -14,6 +15,7 @@ import { HotelRoomDataInterface } from './interface/hotel-room.interface';
 import { HotelRoomBodyParamsDto } from './dto/hotel-room-params.dto';
 import { UpdateHotelRoomBodyDto } from './dto/update-hotel-room.dto';
 import { AuthGuard } from '../guard/auth.guard';
+import { HotelRoomQueryParamsDto } from './dto/hotel-room-query.dto';
 
 @Controller('/hotel-room')
 @UseGuards(AuthGuard)
@@ -30,8 +32,9 @@ export class HotelRoomController {
   @Get('/list')
   async findAllHotelRooms(
     @Body() body: HotelRoomBodyParamsDto,
+    @Query() query: HotelRoomQueryParamsDto,
   ): Promise<HotelRoomDataInterface[]> {
-    return await this.hotelRoomService.findAllHotelRooms(body);
+    return await this.hotelRoomService.findAllHotelRooms(body, query);
   }
 
   @Get('/:id')

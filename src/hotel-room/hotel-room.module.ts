@@ -4,9 +4,12 @@ import { HotelRoomController } from './hotel-room.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { HotelEntity } from '../database/hotel.entity';
+import { BookingEntity } from '../database/booking.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([HotelRoomEntity, HotelEntity])],
+  imports: [
+    TypeOrmModule.forFeature([HotelRoomEntity, HotelEntity, BookingEntity]),
+  ],
   controllers: [HotelRoomController],
   providers: [HotelRoomService],
   exports: [HotelRoomService],

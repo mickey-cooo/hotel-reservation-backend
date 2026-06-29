@@ -16,6 +16,9 @@ import {
 import { UpdateHotelRoomBodyDto } from './dto/update-hotel-room.dto';
 import { HotelRoomStatus } from '../enum/hotel-room.status';
 import { HotelRoomDataInterface } from './interface/hotel-room.interface';
+import { BookingEntity } from '../database/booking.entity';
+import { HotelBookingStatus } from '../enum/hotel.booking.status';
+import { HotelRoomQueryParamsDto } from './dto/hotel-room-query.dto';
 
 @Injectable()
 export class HotelRoomService {
@@ -25,6 +28,8 @@ export class HotelRoomService {
     private readonly hotelRoomRepository: Repository<HotelRoomEntity>,
     @InjectRepository(HotelEntity)
     private readonly hotelRepository: Repository<HotelEntity>,
+    @InjectRepository(BookingEntity)
+    private readonly bookingRepository: Repository<BookingEntity>,
   ) {}
 
   async createHotelRoom(
@@ -73,19 +78,111 @@ export class HotelRoomService {
 
   async findAllHotelRooms(
     param: HotelRoomBodyParamsDto,
+    query: HotelRoomQueryParamsDto,
   ): Promise<HotelRoomDataInterface[]> {
     try {
+      if (query.hotel_id) {
+        const hotel = await this.hotelRepository
+          .createQueryBuilder('h')
+          .where('h.id = :id', { id: query.hotel_id })
+          .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+          .getOne();
+
+        if (!hotel) {
+          throw new NotFoundException('Hotel not found');
+        }
+      }
+
+      if (query.checkInDate && query.checkOutDate) {
+        const hotelRooms = await this.hotelRoomRepository
+          .createQueryBuilder('hr')
+          .leftJoinAndSelect('hr.hotel', 'h')
+          .where('hr.deletedAt IS NULL')
+          .andWhere('hr.status = :status', {
+            status: HotelRoomStatus.AVAILABLE,
+          })
+          .getMany();
+
+        if (!hotelRooms.length) return [];
+      }
+
+      if (query.guestNumber) {
+        const hotelRoom = await this.hotelRoomRepository
+          .createQueryBuilder('hr')
+          .where('hr.capacity >= :capacity', { capacity: query.guestNumber })
+          .andWhere('hr.deletedAt IS NULL')
+          .andWhere('hr.status = :status', {
+            status: HotelRoomStatus.AVAILABLE,
+          })
+          .getMany();
+
+        if (!hotelRoom.length) return [];
+
+        param.ids = hotelRoom.map((item) => item.id);
+      }
+
+      if (query.roomCount) {
+        const hotelRoom = await this.hotelRoomRepository
+          .createQueryBuilder('hr')
+          .where('hr.rooms >= :rooms', { rooms: query.roomCount })
+          .andWhere('hr.deletedAt IS NULL')
+          .andWhere('hr.status = :status', {
+            status: HotelRoomStatus.AVAILABLE,
+          })
+          .getMany();
+
+        if (!hotelRoom.length) return [];
+
+        param.ids = hotelRoom.map((item) => item.id);
+      }
+
       const hotelRooms = await this.hotelRoomRepository
         .createQueryBuilder('hr')
+        .leftJoinAndSelect('hr.hotel', 'h')
         .whereInIds(param.ids)
+        .andWhere('hr.status = :status', {
+          status: HotelRoomStatus.AVAILABLE,
+        })
         .andWhere('hr.deletedAt IS NULL')
-        .getRawMany();
+        .getMany();
 
-      if (!hotelRooms) {
+      if (!hotelRooms.length) {
         return [];
       }
 
-      return hotelRooms;
+      const activeBookings = await this.bookingRepository
+        .createQueryBuilder('hb')
+        .select('hb.hotel_room_id', 'hotelRoomId')
+        .where('hb.hotel_room_id IN (:...ids)', {
+          ids: hotelRooms.map((item) => item.id),
+        })
+        .andWhere('hb.status IN (:...status)', {
+          status: [
+            HotelBookingStatus.BOOKED,
+            HotelBookingStatus.AWAITING_PAYMENT,
+            HotelBookingStatus.AWAITING_CONFIRMATION,
+            HotelBookingStatus.CONFIRMED,
+          ],
+        })
+        .getRawMany();
+
+      const bookedRoomIds = new Set(activeBookings.map((b) => b.hotelRoomId));
+
+      return hotelRooms
+        .filter((room) => !bookedRoomIds.has(room.id))
+        .map((room) => ({
+          id: room.id,
+          hotel_id: room.hotel?.id || '',
+          name: room.name,
+          description: room.description,
+          image: room.image,
+          price: room.price,
+          capacity: room.capacity,
+          status: room.status,
+          policies: room.policies,
+          amenities: room.amenities,
+          type: room.type,
+        }));
     } catch (error) {
       throw error;
     }
