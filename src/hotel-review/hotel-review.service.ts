@@ -20,6 +20,7 @@ import {
 } from './interface/hotel-review-interface';
 import { UpdateHotelReviewBodyDto } from './dto/update-hotel-review.dto';
 import { ReplyHotelReviewBodyDto } from './dto/reply-hotel-review.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class HotelReviewService {
@@ -30,6 +31,7 @@ export class HotelReviewService {
     private readonly bookingRepository: Repository<BookingEntity>,
     private readonly hotelService: HotelService,
     private readonly dataSource: DataSource,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createHotelReview(
@@ -92,6 +94,11 @@ export class HotelReviewService {
 
       return newHotelReview.raw;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'createHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -123,6 +130,11 @@ export class HotelReviewService {
 
       return hotelReviews;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'findAllHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -156,6 +168,11 @@ export class HotelReviewService {
 
       return hotelReview;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'findOneHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -203,6 +220,11 @@ export class HotelReviewService {
       return updatedHotelReview.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'updateHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -252,6 +274,11 @@ export class HotelReviewService {
       return deletedHotelReview.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'deleteHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -288,6 +315,11 @@ export class HotelReviewService {
 
       return updatedHotelReview.raw;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelReviewService.name,
+        event: 'replyHotelReview',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }

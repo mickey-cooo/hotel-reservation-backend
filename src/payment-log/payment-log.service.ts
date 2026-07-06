@@ -8,6 +8,7 @@ import {
   ListParamsPaymentLogDto,
   ParamPaymentLogDto,
 } from './dto/params.payment-log.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class PaymentLogService {
@@ -15,6 +16,7 @@ export class PaymentLogService {
     private readonly dataSource: DataSource,
     @InjectRepository(PaymentLogEntity)
     private readonly paymentLogRepository: Repository<PaymentLogEntity>,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async create(body: CreatePaymentLogBodyDto, user_id: string) {
@@ -32,6 +34,11 @@ export class PaymentLogService {
 
       return paymentLog;
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentLogService.name,
+        event: 'create',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -48,6 +55,11 @@ export class PaymentLogService {
       }
       return paymentLogs;
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentLogService.name,
+        event: 'findAll',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -63,6 +75,11 @@ export class PaymentLogService {
       }
       return paymentLog;
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentLogService.name,
+        event: 'findById',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -97,6 +114,11 @@ export class PaymentLogService {
       return result;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: PaymentLogService.name,
+        event: 'update',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -132,6 +154,11 @@ export class PaymentLogService {
       return result;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: PaymentLogService.name,
+        event: 'delete',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();

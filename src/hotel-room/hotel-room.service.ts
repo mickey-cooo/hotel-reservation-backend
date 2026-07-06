@@ -19,6 +19,7 @@ import { HotelRoomDataInterface } from './interface/hotel-room.interface';
 import { BookingEntity } from '../database/booking.entity';
 import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import { HotelRoomQueryParamsDto } from './dto/hotel-room-query.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class HotelRoomService {
@@ -30,6 +31,7 @@ export class HotelRoomService {
     private readonly hotelRepository: Repository<HotelEntity>,
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createHotelRoom(
@@ -72,6 +74,11 @@ export class HotelRoomService {
 
       return createdHotelRooms;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'createHotelRoom',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -81,14 +88,14 @@ export class HotelRoomService {
     query: HotelRoomQueryParamsDto,
   ): Promise<HotelRoomDataInterface[]> {
     try {
-      if (query.hotel_id) {
+      if (query.hotel_id?.length) {
         const hotel = await this.hotelRepository
           .createQueryBuilder('h')
-          .where('h.id = :id', { id: query.hotel_id })
+          .where('h.id IN (:...id)', { id: query.hotel_id })
           .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
-          .getOne();
+          .getMany();
 
-        if (!hotel) {
+        if (!hotel.length) {
           throw new NotFoundException('Hotel not found');
         }
       }
@@ -184,6 +191,11 @@ export class HotelRoomService {
           type: room.type,
         }));
     } catch (error) {
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'findAllHotelRooms',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -207,6 +219,11 @@ export class HotelRoomService {
         hotel_id: hotelRoom.hotel?.id || '',
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'findOneHotelRoom',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -261,6 +278,11 @@ export class HotelRoomService {
       return updatedHotelRoom.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'updateHotelRoom',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -299,6 +321,11 @@ export class HotelRoomService {
       return;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'deleteHotelRoom',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -335,6 +362,11 @@ export class HotelRoomService {
         hotel_id: hotelRoom.hotel?.id || '',
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelRoomService.name,
+        event: 'hotelRoomAvailability',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }

@@ -9,6 +9,7 @@ import { CommonStatus } from '../enum/common.status';
 import { CreateBodyUserDto } from './dto/create-user.dto';
 import { DataSource } from 'typeorm';
 import { MailService } from '../mail/mail.service';
+import { LoggerService } from '../logger/logger.service';
 
 describe('UserService', () => {
   let service: UserService;
@@ -34,6 +35,10 @@ describe('UserService', () => {
 
   const jwtService = {
     sign: jest.fn(),
+  };
+
+  const loggerService = {
+    error: jest.fn(),
   };
 
   const dataSource = {
@@ -77,6 +82,7 @@ describe('UserService', () => {
         },
         { provide: JwtService, useValue: jwtService },
         { provide: MailService, useValue: mailService },
+        { provide: LoggerService, useValue: loggerService },
       ],
     }).compile();
 

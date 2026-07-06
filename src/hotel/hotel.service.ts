@@ -17,6 +17,7 @@ import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
 import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.interface';
 import { PaginationQueryDto } from '../pagination/dto/pagination.dto';
 import { PaginationService } from '../pagination/pagination.service';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class HotelService {
@@ -29,6 +30,7 @@ export class HotelService {
     private readonly addressService: AddressService,
     private readonly dataSource: DataSource,
     private readonly paginationService: PaginationService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createHotel(body: CreateHotelBodyDto) {
@@ -99,6 +101,11 @@ export class HotelService {
         },
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelService.name,
+        event: 'createHotel',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -122,6 +129,11 @@ export class HotelService {
         data: currentHotel,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelService.name,
+        event: 'findOneHotel',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -141,6 +153,11 @@ export class HotelService {
 
       return await this.paginationService.paginate(query, hotel);
     } catch (error) {
+      this.loggerService.error({
+        service: HotelService.name,
+        event: 'findAllHotel',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -252,6 +269,11 @@ export class HotelService {
         },
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelService.name,
+        event: 'updateHotel',
+        payload: { message: error.message, stack: error.stack },
+      });
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
@@ -304,6 +326,11 @@ export class HotelService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: HotelService.name,
+        event: 'deleteHotel',
+        payload: { message: error.message, stack: error.stack },
+      });
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {

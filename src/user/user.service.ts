@@ -25,6 +25,7 @@ import {
 import { ResetPasswordEntity } from '../database/reset-password.entity';
 import { MailService } from '../mail/mail.service';
 import { v4 as uuidV4 } from 'uuid';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class UserService {
@@ -38,6 +39,7 @@ export class UserService {
     private readonly resetPasswordRepository: Repository<ResetPasswordEntity>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createUser(body: CreateBodyUserDto) {
@@ -64,6 +66,11 @@ export class UserService {
         data: createUser,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'createUser',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -100,6 +107,11 @@ export class UserService {
         data: currentUser,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'findAllUser',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -136,6 +148,11 @@ export class UserService {
         data: currentUser,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'findOneUser',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -242,6 +259,11 @@ export class UserService {
         data: updatedUser,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'updateUser',
+        payload: { message: error.message, stack: error.stack },
+      });
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
@@ -283,6 +305,11 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'deleteUser',
+        payload: { message: error.message, stack: error.stack },
+      });
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
@@ -337,6 +364,11 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'register',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -377,6 +409,11 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'verifyOtp',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -416,6 +453,11 @@ export class UserService {
         accessToken: `Bearer ${token}`,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'login',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -480,6 +522,11 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'resetPassword',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -515,6 +562,11 @@ export class UserService {
         data: null,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: UserService.name,
+        event: 'sendMailResetPassword',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }

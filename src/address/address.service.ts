@@ -30,6 +30,7 @@ import { DistrictEntity } from '../database/district.entity';
 import { AmphurEntity } from '../database/amhur.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { LoggerService } from '../logger/logger.service';
 
 const CACHE_FOREVER = 0;
 
@@ -53,6 +54,7 @@ export class AddressService {
       set: Cache['set'];
       del: Cache['del'];
     },
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createAddress(body: CreateAddressBodyDto): Promise<{
@@ -83,6 +85,11 @@ export class AddressService {
 
       return { message: 'Address created successfully', data };
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'createAddress',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -111,6 +118,11 @@ export class AddressService {
 
       return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findOneAddress',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -140,6 +152,11 @@ export class AddressService {
 
       return { message: 'Address found successfully', data: currentAddress };
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findAllAddress',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -166,6 +183,11 @@ export class AddressService {
 
       return currentGeography;
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findAllGeography',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -199,6 +221,11 @@ export class AddressService {
 
       return currentProvince;
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findOneProvince',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -242,6 +269,11 @@ export class AddressService {
 
       return currentDistrict;
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findDistrictByProvince',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -278,6 +310,11 @@ export class AddressService {
 
       return currentAmphur;
     } catch (error) {
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'findAmphurByProvince',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -334,6 +371,11 @@ export class AddressService {
       return data;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'updateAddress',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -371,6 +413,11 @@ export class AddressService {
       return deletedAddress.raw ?? null;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: AddressService.name,
+        event: 'deleteAddress',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();

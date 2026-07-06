@@ -5,9 +5,14 @@ import { HotelReviewEntity } from '../database/hotel-review.entity';
 import { BookingEntity } from '../database/booking.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HotelModule } from '../hotel/hotel.module';
+import { AppLogModule } from '../logger/logger.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([HotelReviewEntity, BookingEntity]), HotelModule],
+  imports: [
+    TypeOrmModule.forFeature([HotelReviewEntity, BookingEntity]),
+    HotelModule,
+    AppLogModule,
+  ],
   controllers: [HotelReviewController],
   providers: [HotelReviewService],
 })

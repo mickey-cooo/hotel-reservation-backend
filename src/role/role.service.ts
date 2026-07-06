@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateBodyRoleDto } from './dto/create-role.dto';
 import { BodyRoleIdsDto, RoleParamDto } from './dto/role-param.dto';
 import { UpdateBodyRoleDto } from './dto/update-role.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class RoleService {
@@ -16,6 +17,7 @@ export class RoleService {
     private readonly dataSource: DataSource,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async createRole(body: CreateBodyRoleDto) {
@@ -41,6 +43,11 @@ export class RoleService {
         data: role,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: RoleService.name,
+        event: 'createRole',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -62,6 +69,11 @@ export class RoleService {
         data: roles,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: RoleService.name,
+        event: 'findAllRoles',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -83,6 +95,11 @@ export class RoleService {
         data: currentRole,
       };
     } catch (error) {
+      this.loggerService.error({
+        service: RoleService.name,
+        event: 'findOneRole',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -124,6 +141,11 @@ export class RoleService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: RoleService.name,
+        event: 'updateRole',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -165,6 +187,11 @@ export class RoleService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: RoleService.name,
+        event: 'deleteRole',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();

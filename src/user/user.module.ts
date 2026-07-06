@@ -9,10 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import { ConfigModule } from '@nestjs/config';
 import { ResetPasswordEntity } from '../database/reset-password.entity';
 import { MailModule } from '../mail/mail.module';
+import { AppLogModule } from '../logger/logger.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, AddressEntity, ResetPasswordEntity]),
+    AppLogModule,
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],

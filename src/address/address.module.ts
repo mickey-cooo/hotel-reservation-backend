@@ -8,6 +8,7 @@ import { AmphurEntity } from '../database/amhur.entity';
 import { DistrictEntity } from '../database/district.entity';
 import { GeographyEntity } from '../database/geography.entity';
 import { CacheModule } from '@nestjs/cache-manager';
+import { AppLogModule } from '../logger/logger.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CacheModule } from '@nestjs/cache-manager';
       DistrictEntity,
       GeographyEntity,
     ]),
+    AppLogModule,
   ],
   controllers: [AddressController],
   providers: [AddressService],
