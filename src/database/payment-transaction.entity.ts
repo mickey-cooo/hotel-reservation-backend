@@ -1,14 +1,24 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { PaymentTransactionStatus } from '../enum/payment-transaction.status';
+import { CardEntity } from './card.entity';
 
 @Entity('payment_transaction')
 export class PaymentTransactionEntity extends TemplateEntity {
   @Column({ type: 'varchar' })
   orderId: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  transactionId: string;
+
   @Column({ type: 'varchar', unique: true })
   stripeSessionId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentIntentId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  stripeRefundId: string | null;
 
   @Column({ type: 'bigint' })
   amount: number;
@@ -25,4 +35,8 @@ export class PaymentTransactionEntity extends TemplateEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   paidAt: Date | null;
+
+  @ManyToOne(() => CardEntity, (card) => card.paymentTransactions)
+  @JoinColumn({ name: 'card_id' })
+  card: CardEntity;
 }

@@ -9,6 +9,8 @@ import { StripeEventEntity } from '../database/stripe-event.entity';
 import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import { PaymentStatus } from '../enum/common.status';
 import { PaymentTransactionStatus } from '../enum/payment-transaction.status';
+import { MailService } from '../mail/mail.service';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class StripeEventsService {
@@ -20,6 +22,14 @@ export class StripeEventsService {
     private readonly stripe: Stripe,
     @InjectRepository(StripeEventEntity)
     private readonly stripeEventRepository: Repository<StripeEventEntity>,
+    @InjectRepository(BookingEntity)
+    private readonly bookingRepository: Repository<BookingEntity>,
+    @InjectRepository(OrderEntity)
+    private readonly orderRepository: Repository<OrderEntity>,
+    @InjectRepository(PaymentTransactionEntity)
+    private readonly paymentTransactionRepository: Repository<PaymentTransactionEntity>,
+    private readonly mailService: MailService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   verifyWebhookSignature(rawBody: Buffer, signature: string): Stripe.Event {
@@ -57,7 +67,16 @@ export class StripeEventsService {
 
       await queryRunner.commitTransaction();
       this.logger.log(`Event processed: ${event.id} (${event.type})`);
+
+      if (event.type === 'checkout.session.completed') {
+        await this.sendBookingConfirmationMail(event);
+      }
     } catch (error) {
+      this.loggerService.error({
+        service: StripeEventsService.name,
+        event: 'handleEvent',
+        payload: { message: error.message, stack: error.stack },
+      });
       await queryRunner.rollbackTransaction();
       this.logger.error(`Failed to process event ${event.id}`, error);
       throw error;
@@ -81,11 +100,16 @@ export class StripeEventsService {
     }
 
     const now = new Date();
+    const paymentIntentId = session.payment_intent;
 
     await manager
       .createQueryBuilder()
       .update(PaymentTransactionEntity)
-      .set({ status: PaymentTransactionStatus.PAID, paidAt: now })
+      .set({
+        status: PaymentTransactionStatus.PAID,
+        paidAt: now,
+        paymentIntentId,
+      })
       .where('stripeSessionId = :sessionId', { sessionId: session.id })
       .execute();
 
@@ -113,5 +137,42 @@ export class StripeEventsService {
       .set({ processed: true, processedAt: now })
       .where('stripeEventId = :stripeEventId', { stripeEventId: event.id })
       .execute();
+  }
+
+  private async sendBookingConfirmationMail(
+    event: Stripe.Event,
+  ): Promise<void> {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookingId = session.metadata?.bookingId;
+
+    if (!bookingId) return;
+
+    const booking = await this.bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ['user'],
+    });
+
+    if (!booking?.user?.email) {
+      this.logger.warn(`No user email for booking ${bookingId}, skip mail`);
+      return;
+    }
+
+    try {
+      await this.mailService.sendHotelBookingMail(
+        booking.user.email,
+        '',
+        booking,
+      );
+    } catch (error) {
+      this.loggerService.error({
+        service: StripeEventsService.name,
+        event: 'sendBookingConfirmationMail',
+        payload: { message: error.message, stack: error.stack },
+      });
+      this.logger.error(
+        `Failed to send booking confirmation for ${bookingId}`,
+        error,
+      );
+    }
   }
 }

@@ -7,11 +7,20 @@ import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { HotelEntity } from '../database/hotel.entity';
 import { PaymentLogEntity } from '../database/payment-log.entity';
 import { MailModule } from '../mail/mail.module';
+import { AppLogModule } from '../logger/logger.module';
+import { StripeModule } from '../stripe/stripe.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BookingEntity, HotelRoomEntity, HotelEntity, PaymentLogEntity]),
+    TypeOrmModule.forFeature([
+      BookingEntity,
+      HotelRoomEntity,
+      HotelEntity,
+      PaymentLogEntity,
+    ]),
     MailModule,
+    AppLogModule,
+    StripeModule,
   ],
   controllers: [HotelBookingController],
   providers: [HotelBookingService],

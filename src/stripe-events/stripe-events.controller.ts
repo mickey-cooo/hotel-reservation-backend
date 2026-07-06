@@ -13,13 +13,17 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import type Stripe from 'stripe';
 import { StripeEventsService } from './stripe-events.service';
+import { LoggerService } from '../logger/logger.service';
 
 @ApiTags('stripe')
 @Controller('stripe')
 export class StripeEventsController {
   private readonly logger = new Logger(StripeEventsController.name);
 
-  constructor(private readonly stripeEventsService: StripeEventsService) {}
+  constructor(
+    private readonly stripeEventsService: StripeEventsService,
+    private readonly loggerService: LoggerService,
+  ) {}
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
@@ -44,6 +48,11 @@ export class StripeEventsController {
         signature,
       );
     } catch (err) {
+      this.loggerService.error({
+        service: StripeEventsController.name,
+        event: 'handleWebhook',
+        payload: { message: err.message, stack: err.stack },
+      });
       this.logger.error('Webhook signature verification failed', err);
       throw new BadRequestException('Invalid webhook signature');
     }

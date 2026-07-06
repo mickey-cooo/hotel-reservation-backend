@@ -20,6 +20,11 @@ import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import { MailService } from '../mail/mail.service';
 import { RefundBookingBodyDto } from './dto/refund-booking.dto';
 import { PaymentLogEntity } from '../database/payment-log.entity';
+import { OrderEntity } from '../database/order.entity';
+import { PaymentTransactionEntity } from '../database/payment-transaction.entity';
+import { PaymentTransactionStatus } from '../enum/payment-transaction.status';
+import { LoggerService } from '../logger/logger.service';
+import { StripeService } from '../stripe/stripe.service';
 
 @Injectable()
 export class HotelBookingService {
@@ -34,6 +39,8 @@ export class HotelBookingService {
     private readonly paymentLogRepository: Repository<PaymentLogEntity>,
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
+    private readonly loggerService: LoggerService,
+    private readonly stripeService: StripeService,
   ) {}
 
   async createHotelBooking(body: CreateHotelBookingBodyDto, user_id: string) {
@@ -122,6 +129,11 @@ export class HotelBookingService {
       );
       return hotelBooking.raw;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'createHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -141,6 +153,11 @@ export class HotelBookingService {
 
       return hotelBookings;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'findAllHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -163,6 +180,11 @@ export class HotelBookingService {
 
       return hotelBooking;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'findOneHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -207,6 +229,11 @@ export class HotelBookingService {
       return updatedHotelBooking.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'updateHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -246,6 +273,11 @@ export class HotelBookingService {
       return updatedHotelBooking.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'bookingConfirm',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -321,6 +353,11 @@ export class HotelBookingService {
       return cancelledHotelBooking.raw;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'cancelHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -358,6 +395,11 @@ export class HotelBookingService {
 
       return confirmedHotelBooking.raw;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'confirmHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -404,6 +446,11 @@ export class HotelBookingService {
 
       return completedHotelBooking.raw;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'completeHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -507,6 +554,11 @@ export class HotelBookingService {
 
       return hotelRoomAvailability;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'availableHotelBooking',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -550,6 +602,52 @@ export class HotelBookingService {
 
       const isRefundable = booking.paymentStatus === PaymentStatus.PAID;
 
+      let stripeRefundId: string | null = null;
+      let paymentTransaction: PaymentTransactionEntity | null = null;
+
+      if (isRefundable) {
+        const order = await queryRunner.manager
+          .createQueryBuilder(OrderEntity, 'o')
+          .where('o.booking_id = :bookingId', { bookingId: booking.id })
+          .getOne();
+
+        if (!order) {
+          throw new NotFoundException(
+            `Order not found for booking "${booking.bookingCode}"`,
+          );
+        }
+
+        paymentTransaction = await queryRunner.manager
+          .createQueryBuilder(PaymentTransactionEntity, 'pt')
+          .where('pt.orderId = :orderId', { orderId: order.id })
+          .andWhere('pt.status = :status', {
+            status: PaymentTransactionStatus.PAID,
+          })
+          .getOne();
+
+        if (!paymentTransaction?.paymentIntentId) {
+          throw new NotFoundException(
+            `Paid payment transaction not found for booking "${booking.bookingCode}"`,
+          );
+        }
+
+        const refund = await this.stripeService.refundPaymentIntent({
+          paymentIntentId: paymentTransaction.paymentIntentId,
+          idempotencyKey: `refund_${booking.id}`,
+        });
+        stripeRefundId = refund.id;
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(PaymentTransactionEntity)
+          .set({
+            status: PaymentTransactionStatus.REFUNDED,
+            stripeRefundId,
+          })
+          .where('id = :id', { id: paymentTransaction.id })
+          .execute();
+      }
+
       await queryRunner.manager
         .createQueryBuilder()
         .update(BookingEntity)
@@ -575,6 +673,7 @@ export class HotelBookingService {
             previousStatus: booking.status,
             previousPaymentStatus: booking.paymentStatus,
             refundAmount: isRefundable ? booking.paymentAmount : 0,
+            stripeRefundId,
           }),
         })
         .execute();
@@ -605,6 +704,11 @@ export class HotelBookingService {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'cancelAndRefund',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     } finally {
       await queryRunner.release();
@@ -646,6 +750,11 @@ export class HotelBookingService {
 
       return totalPrice;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'calculateTotalPrice',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -670,6 +779,11 @@ export class HotelBookingService {
 
       return `TXN${nextTransactionIdNumber.toString().padStart(5, '0')}`;
     } catch (error) {
+      this.loggerService.error({
+        service: HotelBookingService.name,
+        event: 'generateTransactionId',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }

@@ -7,6 +7,7 @@ import { PaymentTransactionEntity } from '../database/payment-transaction.entity
 import { StripeController } from './stripe.controller';
 import { StripeProvider } from './stripe.provider';
 import { StripeService } from './stripe.service';
+import { AppLogModule } from '../logger/logger.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StripeService } from './stripe.service';
       OrderEntity,
     ]),
     JwtModule.register({ secret: process.env.JWT_SECRET }),
+    AppLogModule,
   ],
   controllers: [StripeController],
   providers: [StripeProvider, StripeService],

@@ -107,7 +107,13 @@ export class StripeService {
     return { sessionId: session.id, url: session.url };
   }
 
-  async refundPaymentIntent(body: { paymentIntentId: string }) {
-    return this.stripe.refunds.create({ payment_intent: body.paymentIntentId });
+  async refundPaymentIntent(body: {
+    paymentIntentId: string;
+    idempotencyKey: string;
+  }) {
+    return this.stripe.refunds.create(
+      { payment_intent: body.paymentIntentId },
+      { idempotencyKey: body.idempotencyKey },
+    );
   }
 }
