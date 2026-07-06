@@ -31,3 +31,10 @@ export enum Role {
   CLIENT = 'client',
   HOTEL_OWNER = 'hotel_owner',
 }
+
+export enum LogLevel {
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error',
+  DEBUG = 'debug',
+}

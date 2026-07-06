@@ -16,6 +16,8 @@ import { MailModule } from './mail/mail.module';
 import { StripeModule } from './stripe/stripe.module';
 import { StripeEventsModule } from './stripe-events/stripe-events.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AppLogModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -52,6 +55,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ChatModule,
     StripeModule,
     StripeEventsModule,
+    AppLogModule,
   ],
 })
 export class AppModule {}

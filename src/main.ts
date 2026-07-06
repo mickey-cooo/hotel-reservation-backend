@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-// import { Logger } from './utils/logger/logger.service.js';
-// import { HttpExceptionalFilter } from './utils/exceptionalFilter/exceptionalFilter.js';
+import { HttpExceptionalFilter } from './utils/exceptionHandler.js';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  // const logger = new Logger();
+  const logger = new Logger();
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api/v1');
@@ -14,7 +14,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // app.useGlobalFilters(new HttpExceptionalFilter(logger.error.bind(logger)));
+  app.useGlobalFilters(new HttpExceptionalFilter(logger.error.bind(logger)));
   const config = new DocumentBuilder()
     .setTitle('Hotel Reservation System')
     .setDescription('The Hotel Reservation System API description')
