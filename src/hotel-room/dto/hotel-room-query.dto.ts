@@ -6,7 +6,7 @@ export class HotelRoomQueryParamsDto {
   @IsNotEmpty()
   @IsString()
   @IsOptional()
-  hotel_id?: string;
+  hotel_id?: string[];
 
   @ApiProperty()
   @IsNotEmpty()
