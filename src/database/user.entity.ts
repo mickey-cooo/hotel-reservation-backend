@@ -5,7 +5,7 @@ import { CommonStatus } from '../enum/common.status';
 import { RoleEntity } from './role.entity';
 import { HotelReviewEntity } from './hotel-review.entity';
 import { BookingEntity } from './booking.entity';
-import { PaymentEntity } from './payment.entity';
+import { CardEntity } from './card.entity';
 import { ResetPasswordEntity } from './reset-password.entity';
 
 export interface UserNameType {
@@ -53,8 +53,8 @@ export class UserEntity extends TemplateEntity {
   @OneToMany(() => BookingEntity, (booking) => booking.user)
   bookings?: BookingEntity[];
 
-  @OneToMany(() => PaymentEntity, (payment) => payment.user)
-  payments?: PaymentEntity[];
+  @OneToMany(() => CardEntity, (payment) => payment.user)
+  payments?: CardEntity[];
 
   @OneToMany(() => ResetPasswordEntity, (resetPassword) => resetPassword.user)
   resetPasswords?: ResetPasswordEntity[];

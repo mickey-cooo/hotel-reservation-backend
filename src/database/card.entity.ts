@@ -1,10 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { TemplateEntity } from './template.entity';
 import { CommonStatus } from '../enum/common.status';
 import { UserEntity } from './user.entity';
+import { PaymentTransactionEntity } from './payment-transaction.entity';
 
-@Entity('payment')
-export class PaymentEntity extends TemplateEntity {
+@Entity('card')
+export class CardEntity extends TemplateEntity {
   @Column({ type: 'varchar', nullable: true })
   cardNumber: string;
 
@@ -26,4 +27,10 @@ export class PaymentEntity extends TemplateEntity {
   @ManyToOne(() => UserEntity, (user) => user.payments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
+
+  @OneToMany(
+    () => PaymentTransactionEntity,
+    (paymentTransaction) => paymentTransaction.card,
+  )
+  paymentTransactions: PaymentTransactionEntity[];
 }

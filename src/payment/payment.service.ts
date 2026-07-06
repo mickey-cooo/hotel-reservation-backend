@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { DataSource, Repository } from 'typeorm';
 import { BookingEntity } from '../database/booking.entity';
-import { PaymentEntity } from '../database/payment.entity';
 import { PaymentLogEntity } from '../database/payment-log.entity';
 import { UserEntity } from '../database/user.entity';
 import { CommonStatus } from '../enum/common.status';
@@ -18,6 +17,8 @@ import {
   ParamPaymentIdDto,
   ParamPaymentQueryDto,
 } from './dto/payment-params.dto';
+import { CardEntity } from '../database/card.entity';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class PaymentService {
@@ -25,14 +26,15 @@ export class PaymentService {
 
   constructor(
     private readonly dataSource: DataSource,
-    @InjectRepository(PaymentEntity)
-    private readonly paymentRepository: Repository<PaymentEntity>,
+    @InjectRepository(CardEntity)
+    private readonly cardRepository: Repository<CardEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
     @InjectRepository(PaymentLogEntity)
     private readonly paymentLogRepository: Repository<PaymentLogEntity>,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async create(body: CreatePaymentBodyDto, user_id: string) {
@@ -40,7 +42,7 @@ export class PaymentService {
       const cardNumberHash = await this.hashSecret(body.cardNumber);
       const cardCvvHash = await this.hashSecret(body.cardCvv);
 
-      const existingCards = await this.paymentRepository
+      const existingCards = await this.cardRepository
         .createQueryBuilder('p')
         .select(['p.id', 'p.cardNumber'])
         .where('p.status = :status', { status: CommonStatus.ACTIVE })
@@ -66,10 +68,10 @@ export class PaymentService {
         }
       }
 
-      const createdPayment = await this.paymentRepository
+      const createdPayment = await this.cardRepository
         .createQueryBuilder()
         .insert()
-        .into(PaymentEntity)
+        .into(CardEntity)
         .values({
           cardNumber: cardNumberHash,
           cardHolderName: body.cardHolderName,
@@ -97,13 +99,18 @@ export class PaymentService {
 
       return createdPayment.raw[0];
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentService.name,
+        event: 'create',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
 
   async findAll(params: ParamPaymentQueryDto) {
     try {
-      const queryBuilder = this.paymentRepository
+      const queryBuilder = this.cardRepository
         .createQueryBuilder('p')
         .innerJoinAndSelect('p.user', 'u')
         .select([
@@ -128,6 +135,11 @@ export class PaymentService {
 
       return payments;
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentService.name,
+        event: 'findAll',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -142,6 +154,11 @@ export class PaymentService {
 
       return payment;
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentService.name,
+        event: 'findOne',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -167,9 +184,9 @@ export class PaymentService {
         }
       }
 
-      const updatedPayment = await this.paymentRepository
+      const updatedPayment = await this.cardRepository
         .createQueryBuilder()
-        .update(PaymentEntity)
+        .update(CardEntity)
         .set({
           cardNumber: cardNumberHash,
           cardHolderName: body.cardHolderName ?? currentPayment.cardHolderName,
@@ -197,6 +214,11 @@ export class PaymentService {
 
       return updatedPayment.raw[0];
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentService.name,
+        event: 'update',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -205,9 +227,9 @@ export class PaymentService {
     try {
       const payment = await this.findActivePayment(param.id);
 
-      const deletedPayment = await this.paymentRepository
+      const deletedPayment = await this.cardRepository
         .createQueryBuilder()
-        .update(PaymentEntity)
+        .update(CardEntity)
         .set({
           status: CommonStatus.DELETED,
         })
@@ -229,6 +251,11 @@ export class PaymentService {
 
       return deletedPayment.raw[0];
     } catch (error) {
+      this.loggerService.error({
+        service: PaymentService.name,
+        event: 'delete',
+        payload: { message: error.message, stack: error.stack },
+      });
       throw error;
     }
   }
@@ -249,7 +276,7 @@ export class PaymentService {
   }
 
   private async findActivePayment(id: string): Promise<PaymentResponse> {
-    const payment = await this.paymentRepository
+    const payment = await this.cardRepository
       .createQueryBuilder('p')
       .innerJoinAndSelect('p.user', 'u')
       .select([

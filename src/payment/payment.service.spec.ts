@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentService } from './payment.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { PaymentEntity } from '../database/payment.entity';
+import { CardEntity } from '../database/card.entity';
 import { UserEntity } from '../database/user.entity';
 import { CommonStatus } from '../enum/common.status';
+import { LoggerService } from '../logger/logger.service';
 
 describe('PaymentService', () => {
   let service: PaymentService;
@@ -36,6 +37,9 @@ describe('PaymentService', () => {
   const userRepository = {
     createQueryBuilder: jest.fn(() => userQueryBuilder),
   };
+  const loggerService = {
+    error: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -44,12 +48,16 @@ describe('PaymentService', () => {
       providers: [
         PaymentService,
         {
-          provide: getRepositoryToken(PaymentEntity),
+          provide: getRepositoryToken(CardEntity),
           useValue: paymentRepository,
         },
         {
           provide: getRepositoryToken(UserEntity),
           useValue: userRepository,
+        },
+        {
+          provide: LoggerService,
+          useValue: loggerService,
         },
       ],
     }).compile();
@@ -251,7 +259,7 @@ describe('PaymentService', () => {
       },
     );
 
-    expect(paymentQueryBuilder.update).toHaveBeenCalledWith(PaymentEntity);
+    expect(paymentQueryBuilder.update).toHaveBeenCalledWith(CardEntity);
     expect(paymentQueryBuilder.set).toHaveBeenCalledWith({
       cardNumber: undefined,
       cardHolderName: 'Donald Duck',
@@ -306,7 +314,7 @@ describe('PaymentService', () => {
 
     const result = await service.delete({ id: 'payment-id' });
 
-    expect(paymentQueryBuilder.update).toHaveBeenCalledWith(PaymentEntity);
+    expect(paymentQueryBuilder.update).toHaveBeenCalledWith(CardEntity);
     expect(paymentQueryBuilder.set).toHaveBeenCalledWith({
       status: CommonStatus.DELETED,
     });
