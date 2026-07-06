@@ -11,7 +11,6 @@ class Payload {
 @Index('idx_application_logs_created_at', ['createdAt'])
 @Index('idx_application_logs_level', ['level'])
 @Index('idx_application_logs_service', ['service'])
-@Index('idx_application_logs_trace_id', ['traceId'])
 export class LoggerEntity extends TemplateEntity {
   @Column({
     type: 'enum',
