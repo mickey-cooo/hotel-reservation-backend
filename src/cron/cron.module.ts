@@ -6,6 +6,7 @@ import { BookingEntity } from '../database/booking.entity';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { PaymentTransactionEntity } from '../database/payment-transaction.entity';
 import { CardEntity } from '../database/card.entity';
+import { LoggerEntity } from '../database/logger.entity';
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { CardEntity } from '../database/card.entity';
       HotelRoomEntity,
       PaymentTransactionEntity,
       CardEntity,
+      LoggerEntity,
     ]),
   ],
   providers: [CronService, CronJobService],

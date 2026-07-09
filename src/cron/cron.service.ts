@@ -25,4 +25,13 @@ export class CronService {
     this.logger.log('refundPayment');
     return await this.cronJobService.refundPayment(transactionId);
   }
+
+  @Cron(CronExpression.EVERY_WEEK, {
+    name: 'deleteLog',
+    timeZone: 'Asia/Bangkok',
+  })
+  async deleteLog() {
+    this.logger.log('deleteLog');
+    return await this.cronJobService.deleteLog();
+  }
 }
