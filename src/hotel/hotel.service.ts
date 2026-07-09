@@ -144,12 +144,13 @@ export class HotelService {
         .createQueryBuilder('h')
         .innerJoinAndSelect('h.rooms', 'r')
         .innerJoinAndSelect('h.address', 'a')
-        .whereInIds(body.ids)
         .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
         .andWhere('r.deletedAt IS NULL')
         .andWhere('a.deletedAt IS NULL');
 
-      if (!hotel) return [];
+      if (body.ids?.length) {
+        hotel.andWhere('h.id IN (:...ids)', { ids: body.ids });
+      }
 
       return await this.paginationService.paginate(query, hotel);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ParamHotelDto {
   @ApiProperty()
@@ -9,9 +9,9 @@ export class ParamHotelDto {
 }
 
 export class BodyHotelIdsDto {
-  @ApiProperty()
-  @IsNotEmpty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  ids: string[];
+  ids?: string[];
 }
