@@ -1,11 +1,9 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionalFilter } from './utils/exceptionHandler.js';
-import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const logger = new Logger();
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api/v1');
@@ -14,7 +12,8 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalFilters(new HttpExceptionalFilter(logger.error.bind(logger)));
+  const httpAdapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new HttpExceptionalFilter(httpAdapterHost));
   const config = new DocumentBuilder()
     .setTitle('Hotel Reservation System')
     .setDescription('The Hotel Reservation System API description')
@@ -25,6 +24,5 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT || '');
   console.log(`Application is running on: ${process.env.PORT}`);
-  // logger.log(`Application is running on: ${process.env.PORT ?? 3000}`);
 }
 void bootstrap();
