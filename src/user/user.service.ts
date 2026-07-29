@@ -65,7 +65,7 @@ export class UserService {
         message: 'User created successfully',
         data: createUser,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'createUser',
@@ -106,7 +106,7 @@ export class UserService {
         message: 'User found successfully',
         data: currentUser,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'findAllUser',
@@ -147,7 +147,7 @@ export class UserService {
         message: 'User found successfully',
         data: currentUser,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'findOneUser',
@@ -258,7 +258,7 @@ export class UserService {
         message: 'User updated successfully',
         data: updatedUser,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'updateUser',
@@ -304,7 +304,7 @@ export class UserService {
         message: 'User deleted successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'deleteUser',
@@ -363,7 +363,7 @@ export class UserService {
         message: 'User registered successfully. Please verify your email.',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'register',
@@ -408,7 +408,7 @@ export class UserService {
         message: 'Email verified successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'verifyOtp',
@@ -452,7 +452,7 @@ export class UserService {
         message: 'User logged in successfully',
         accessToken: `Bearer ${token}`,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'login',
@@ -521,7 +521,7 @@ export class UserService {
         message: 'Password reset successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'resetPassword',
@@ -561,7 +561,7 @@ export class UserService {
         message: 'Reset password link sent successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: UserService.name,
         event: 'sendMailResetPassword',

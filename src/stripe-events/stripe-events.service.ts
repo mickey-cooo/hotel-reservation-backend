@@ -33,6 +33,9 @@ export class StripeEventsService {
   ) {}
 
   verifyWebhookSignature(rawBody: Buffer, signature: string): Stripe.Event {
+    if (!rawBody) {
+      throw new ConflictException('Missing rawBody');
+    }
     const secret = process.env.STRIPE_WEBHOOK_SECRET!;
     return this.stripe.webhooks.constructEvent(rawBody, signature, secret);
   }
@@ -71,7 +74,7 @@ export class StripeEventsService {
       if (event.type === 'checkout.session.completed') {
         await this.sendBookingConfirmationMail(event);
       }
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: StripeEventsService.name,
         event: 'handleEvent',
@@ -163,7 +166,7 @@ export class StripeEventsService {
         '',
         booking,
       );
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: StripeEventsService.name,
         event: 'sendBookingConfirmationMail',

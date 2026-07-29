@@ -73,7 +73,7 @@ export class HotelRoomService {
       }
 
       return createdHotelRooms;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelRoomService.name,
         event: 'createHotelRoom',
@@ -190,7 +190,7 @@ export class HotelRoomService {
           amenities: room.amenities,
           type: room.type,
         }));
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelRoomService.name,
         event: 'findAllHotelRooms',
@@ -218,7 +218,7 @@ export class HotelRoomService {
         ...hotelRoom,
         hotel_id: hotelRoom.hotel?.id || '',
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelRoomService.name,
         event: 'findOneHotelRoom',
@@ -276,7 +276,7 @@ export class HotelRoomService {
       await queryRunner.commitTransaction();
 
       return updatedHotelRoom.raw;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelRoomService.name,
@@ -319,7 +319,7 @@ export class HotelRoomService {
       }
 
       return;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelRoomService.name,
@@ -361,7 +361,7 @@ export class HotelRoomService {
         ...hotelRoom,
         hotel_id: hotelRoom.hotel?.id || '',
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelRoomService.name,
         event: 'hotelRoomAvailability',

@@ -93,7 +93,7 @@ export class HotelReviewService {
       }
 
       return newHotelReview.raw;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelReviewService.name,
         event: 'createHotelReview',
@@ -129,7 +129,7 @@ export class HotelReviewService {
       if (!hotelReviews) return [];
 
       return hotelReviews;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelReviewService.name,
         event: 'findAllHotelReview',
@@ -167,7 +167,7 @@ export class HotelReviewService {
       }
 
       return hotelReview;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelReviewService.name,
         event: 'findOneHotelReview',
@@ -218,7 +218,7 @@ export class HotelReviewService {
       await queryRunner.commitTransaction();
 
       return updatedHotelReview.raw ?? null;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelReviewService.name,
@@ -272,7 +272,7 @@ export class HotelReviewService {
       await queryRunner.commitTransaction();
 
       return deletedHotelReview.raw ?? null;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelReviewService.name,
@@ -314,7 +314,7 @@ export class HotelReviewService {
       }
 
       return updatedHotelReview.raw;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelReviewService.name,
         event: 'replyHotelReview',

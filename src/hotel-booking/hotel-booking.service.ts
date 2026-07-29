@@ -128,7 +128,7 @@ export class HotelBookingService {
         hotelBooking.raw,
       );
       return hotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'createHotelBooking',
@@ -152,7 +152,7 @@ export class HotelBookingService {
       }
 
       return hotelBookings;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'findAllHotelBooking',
@@ -179,7 +179,7 @@ export class HotelBookingService {
       }
 
       return hotelBooking;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'findOneHotelBooking',
@@ -227,7 +227,7 @@ export class HotelBookingService {
       await queryRunner.commitTransaction();
 
       return updatedHotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelBookingService.name,
@@ -271,7 +271,7 @@ export class HotelBookingService {
       await queryRunner.commitTransaction();
 
       return updatedHotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelBookingService.name,
@@ -351,7 +351,7 @@ export class HotelBookingService {
       await queryRunner.commitTransaction();
 
       return cancelledHotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelBookingService.name,
@@ -394,7 +394,7 @@ export class HotelBookingService {
       }
 
       return confirmedHotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'confirmHotelBooking',
@@ -445,7 +445,7 @@ export class HotelBookingService {
       );
 
       return completedHotelBooking.raw;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'completeHotelBooking',
@@ -553,7 +553,7 @@ export class HotelBookingService {
       }
 
       return hotelRoomAvailability;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'availableHotelBooking',
@@ -702,7 +702,7 @@ export class HotelBookingService {
           : booking.paymentStatus,
         refundAmount: isRefundable ? booking.paymentAmount : 0,
       };
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: HotelBookingService.name,
@@ -749,7 +749,7 @@ export class HotelBookingService {
       }
 
       return totalPrice;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'calculateTotalPrice',
@@ -778,7 +778,7 @@ export class HotelBookingService {
       const nextTransactionIdNumber = parseInt(lastTransactionIdNumber) + 1;
 
       return `TXN${nextTransactionIdNumber.toString().padStart(5, '0')}`;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelBookingService.name,
         event: 'generateTransactionId',

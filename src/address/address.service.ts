@@ -84,7 +84,7 @@ export class AddressService {
       await this.cacheManager.set(`address:${data.id}`, data, CACHE_FOREVER);
 
       return { message: 'Address created successfully', data };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'createAddress',
@@ -117,7 +117,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentAddress, CACHE_FOREVER);
 
       return { message: 'Address found successfully', data: currentAddress };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findOneAddress',
@@ -151,7 +151,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentAddress, CACHE_FOREVER);
 
       return { message: 'Address found successfully', data: currentAddress };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findAllAddress',
@@ -182,7 +182,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentGeography, CACHE_FOREVER);
 
       return currentGeography;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findAllGeography',
@@ -220,7 +220,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentProvince, CACHE_FOREVER);
 
       return currentProvince;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findOneProvince',
@@ -268,7 +268,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentDistrict, CACHE_FOREVER);
 
       return currentDistrict;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findDistrictByProvince',
@@ -309,7 +309,7 @@ export class AddressService {
       await this.cacheManager.set(cacheKey, currentAmphur, CACHE_FOREVER);
 
       return currentAmphur;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: AddressService.name,
         event: 'findAmphurByProvince',
@@ -369,7 +369,7 @@ export class AddressService {
       await queryRunner.commitTransaction();
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: AddressService.name,
@@ -411,7 +411,7 @@ export class AddressService {
       await this.cacheManager.del(`address:${param.id}`);
 
       return deletedAddress.raw ?? null;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: AddressService.name,

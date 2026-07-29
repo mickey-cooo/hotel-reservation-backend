@@ -98,7 +98,7 @@ export class PaymentService {
       }
 
       return createdPayment.raw[0];
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentService.name,
         event: 'create',
@@ -134,7 +134,7 @@ export class PaymentService {
         .getRawMany();
 
       return payments;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentService.name,
         event: 'findAll',
@@ -153,7 +153,7 @@ export class PaymentService {
       }
 
       return payment;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentService.name,
         event: 'findOne',
@@ -213,7 +213,7 @@ export class PaymentService {
       }
 
       return updatedPayment.raw[0];
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentService.name,
         event: 'update',
@@ -250,7 +250,7 @@ export class PaymentService {
       }
 
       return deletedPayment.raw[0];
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentService.name,
         event: 'delete',

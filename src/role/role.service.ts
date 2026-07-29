@@ -42,7 +42,7 @@ export class RoleService {
         message: 'Role created successfully',
         data: role,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: RoleService.name,
         event: 'createRole',
@@ -68,7 +68,7 @@ export class RoleService {
         message: 'Roles found successfully',
         data: roles,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: RoleService.name,
         event: 'findAllRoles',
@@ -94,7 +94,7 @@ export class RoleService {
         message: 'Role found successfully',
         data: currentRole,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: RoleService.name,
         event: 'findOneRole',
@@ -139,7 +139,7 @@ export class RoleService {
         message: 'Role updated successfully',
         data: updatedRole,
       };
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: RoleService.name,
@@ -185,7 +185,7 @@ export class RoleService {
         message: 'Role deleted successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: RoleService.name,

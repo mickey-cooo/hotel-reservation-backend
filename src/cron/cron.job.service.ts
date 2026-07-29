@@ -46,7 +46,7 @@ export class CronJobService {
           .where('id = :id', { id: expiredBooking.raw.room_id })
           .execute();
       }
-    } catch (error) {
+    } catch (error: any) {
       throw error;
     }
   }
@@ -97,7 +97,7 @@ export class CronJobService {
         });
       }
       return updateBookingStatus;
-    } catch (error) {
+    } catch (error: any) {
       throw error;
     }
   }

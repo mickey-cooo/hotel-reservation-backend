@@ -47,13 +47,13 @@ export class StripeEventsController {
         rawBody,
         signature,
       );
-    } catch (err) {
+    } catch (error: any) {
       this.loggerService.error({
         service: StripeEventsController.name,
         event: 'handleWebhook',
-        payload: { message: err.message, stack: err.stack },
+        payload: { message: error.message, stack: error.stack },
       });
-      this.logger.error('Webhook signature verification failed', err);
+      this.logger.error('Webhook signature verification failed', error);
       throw new BadRequestException('Invalid webhook signature');
     }
 

@@ -33,7 +33,7 @@ export class PaymentLogService {
       }
 
       return paymentLog;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentLogService.name,
         event: 'create',
@@ -54,7 +54,7 @@ export class PaymentLogService {
         throw new BadRequestException('Payment log not found');
       }
       return paymentLogs;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentLogService.name,
         event: 'findAll',
@@ -74,7 +74,7 @@ export class PaymentLogService {
         throw new BadRequestException('Payment log not found');
       }
       return paymentLog;
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: PaymentLogService.name,
         event: 'findById',
@@ -112,7 +112,7 @@ export class PaymentLogService {
 
       await queryRunner.commitTransaction();
       return result;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: PaymentLogService.name,
@@ -152,7 +152,7 @@ export class PaymentLogService {
 
       await queryRunner.commitTransaction();
       return result;
-    } catch (error) {
+    } catch (error: any) {
       await queryRunner.rollbackTransaction();
       this.loggerService.error({
         service: PaymentLogService.name,
