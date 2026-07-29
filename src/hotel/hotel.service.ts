@@ -10,12 +10,11 @@ import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus } from '../enum/common.status';
-import { BodyHotelIdsDto, ParamHotelDto } from './dto/hotel-params.dto';
+import { ParamHotelDto, QueryHotelDto } from './dto/hotel-params.dto';
 import { AddressService } from '../address/address.service';
 import { AddressInterface } from '../address/interface/address.interface';
 import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
 import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.interface';
-import { PaginationQueryDto } from '../pagination/dto/pagination.dto';
 import { PaginationService } from '../pagination/pagination.service';
 import { LoggerService } from '../logger/logger.service';
 
@@ -100,7 +99,7 @@ export class HotelService {
           hotel: createdHotel,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
         event: 'createHotel',
@@ -128,7 +127,7 @@ export class HotelService {
         message: 'Hotel found successfully',
         data: currentHotel,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
         event: 'findOneHotel',
@@ -138,7 +137,7 @@ export class HotelService {
     }
   }
 
-  async findAllHotel(body: BodyHotelIdsDto, query: PaginationQueryDto) {
+  async findAllHotel(query: QueryHotelDto) {
     try {
       const hotel = this.hotelRepository
         .createQueryBuilder('h')
@@ -148,12 +147,32 @@ export class HotelService {
         .andWhere('r.deletedAt IS NULL')
         .andWhere('a.deletedAt IS NULL');
 
-      if (body.ids?.length) {
-        hotel.andWhere('h.id IN (:...ids)', { ids: body.ids });
+      if (query.category) {
+        hotel.andWhere('h.category = :category', {
+          category: query.category,
+        });
+      }
+
+      if (query.price) {
+        hotel.andWhere('h.price <= :price', {
+          price: query.price,
+        });
+      }
+
+      if (query.rating) {
+        hotel.andWhere('h.rating >= :rating', {
+          rating: query.rating,
+        });
+      }
+
+      if (query.amenities) {
+        hotel.andWhere('h.amenities LIKE :amenities', {
+          amenities: `%${query.amenities}%`,
+        });
       }
 
       return await this.paginationService.paginate(query, hotel);
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
         event: 'findAllHotel',
@@ -202,6 +221,7 @@ export class HotelService {
           phoneNumber: body.phoneNumber,
           email: body.email,
           website: body.website,
+          category: body.category,
         })
         .where('id = :id', { id: currentHotel.id })
         .returning([
@@ -213,6 +233,7 @@ export class HotelService {
           'email',
           'website',
           'status',
+          'category',
         ])
         .execute();
 
@@ -269,7 +290,7 @@ export class HotelService {
           rooms: updatedHotelRooms,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
         event: 'updateHotel',
@@ -326,7 +347,7 @@ export class HotelService {
         message: 'Hotel deleted successfully',
         data: null,
       };
-    } catch (error) {
+    } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
         event: 'deleteHotel',

@@ -4,6 +4,7 @@ import { AddressEntity } from './address.entity';
 import { HotelRoomEntity } from './hotel-room.entity';
 import { HotelReviewEntity } from './hotel-review.entity';
 import { CommonStatus } from '../enum/common.status';
+import { HotelCategory } from '../enum/hotel-category.status';
 
 @Entity('hotel')
 export class HotelEntity extends TemplateEntity {
@@ -27,6 +28,9 @@ export class HotelEntity extends TemplateEntity {
 
   @Column({ type: 'enum', enum: CommonStatus, nullable: true })
   status: CommonStatus;
+
+  @Column({ type: 'enum', enum: HotelCategory, nullable: true })
+  category?: HotelCategory;
 
   @ManyToOne(() => AddressEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'address_id' })

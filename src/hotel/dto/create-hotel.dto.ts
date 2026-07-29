@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsObject,
   IsOptional,
@@ -12,6 +13,7 @@ import {
 } from 'class-validator';
 import { AddressDto } from '../../user/dto/address.dto';
 import { CreateHotelRoomBodyDto } from '../../hotel-room/dto/create-hotel-room.dto';
+import { HotelCategory } from '../../enum/hotel-category.status';
 
 export class CreateHotelBodyDto {
   @ApiProperty()
@@ -46,6 +48,11 @@ export class CreateHotelBodyDto {
   @IsString()
   @IsUrl()
   website?: string;
+
+  @ApiProperty({ enum: HotelCategory, required: false })
+  @IsOptional()
+  @IsEnum(HotelCategory)
+  category?: HotelCategory;
 
   @ApiProperty()
   @IsNotEmpty()
