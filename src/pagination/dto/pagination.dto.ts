@@ -3,13 +3,13 @@ import { Type } from 'class-transformer';
 import { IsOptional, IsPositive, Min } from 'class-validator';
 
 export class PaginationQueryDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   @Type(() => Number)
   @IsPositive()
   page?: number = 1;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   @Type(() => Number)
   @IsPositive()
