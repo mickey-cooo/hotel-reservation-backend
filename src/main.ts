@@ -2,9 +2,13 @@ import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionalFilter } from './utils/exceptionHandler.js';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+    logger: new Logger(),
+  });
 
   app.setGlobalPrefix('api/v1');
   app.enableCors({
@@ -20,9 +24,9 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory());
+  SwaggerModule.setup('swagger', app, documentFactory());
 
   await app.listen(process.env.PORT || '');
-  console.log(`Application is running on: ${process.env.PORT}`);
+  Logger.log(`Application is running on: ${process.env.PORT}`);
 }
 void bootstrap();
