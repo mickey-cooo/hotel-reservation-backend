@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod } from '../../enum/common.status';
 
 export class CreateHotelBookingBodyDto {
@@ -40,11 +41,13 @@ export class CreateHotelBookingBodyDto {
 
   @ApiProperty()
   @IsNotEmpty()
+  @Type(() => Date)
   @IsDate()
   checkInDate: Date;
 
   @ApiProperty()
   @IsNotEmpty()
+  @Type(() => Date)
   @IsDate()
   checkOutDate: Date;
 }
