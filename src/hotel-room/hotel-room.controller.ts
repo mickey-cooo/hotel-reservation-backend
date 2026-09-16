@@ -18,11 +18,11 @@ import { AuthGuard } from '../guard/auth.guard';
 import { HotelRoomQueryParamsDto } from './dto/hotel-room-query.dto';
 
 @Controller('/hotel-room')
-@UseGuards(AuthGuard)
 export class HotelRoomController {
   constructor(private readonly hotelRoomService: HotelRoomService) {}
 
   @Post('/create')
+  @UseGuards(AuthGuard)
   async createHotelRoom(
     @Body() body: CreateManyHotelRoomBodyDto,
   ): Promise<HotelRoomDataInterface[]> {
@@ -31,7 +31,7 @@ export class HotelRoomController {
 
   @Get('/list')
   async findAllHotelRooms(
-    @Body() body: HotelRoomBodyParamsDto,
+    @Body() body: HotelRoomBodyParamsDto | undefined,
     @Query() query: HotelRoomQueryParamsDto,
   ): Promise<HotelRoomDataInterface[]> {
     return await this.hotelRoomService.findAllHotelRooms(body, query);
@@ -45,6 +45,7 @@ export class HotelRoomController {
   }
 
   @Patch('/update/:id')
+  @UseGuards(AuthGuard)
   async updateHotelRoom(
     @Param('id') id: string,
     @Body() body: UpdateHotelRoomBodyDto,
@@ -53,6 +54,7 @@ export class HotelRoomController {
   }
 
   @Delete('/delete/:id')
+  @UseGuards(AuthGuard)
   async deleteHotelRoom(@Param('id') id: string): Promise<void> {
     return await this.hotelRoomService.deleteHotelRoom({ id: id });
   }

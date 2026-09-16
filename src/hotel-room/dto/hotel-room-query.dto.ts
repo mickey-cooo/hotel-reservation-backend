@@ -1,22 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsNumber,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class HotelRoomQueryParamsDto {
   @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
   @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsArray()
+  @IsString({ each: true })
   hotel_id?: string[];
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsString()
+  @IsDateString()
   @IsOptional()
   checkInDate?: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsString()
+  @IsDateString()
   @IsOptional()
   checkOutDate?: string;
 
@@ -24,11 +33,26 @@ export class HotelRoomQueryParamsDto {
   @IsNotEmpty()
   @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   guestNumber?: number;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   roomCount?: number;
+
+  @ApiProperty({ required: false })
+  @IsNotEmpty()
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  price?: number;
+
+  @ApiProperty({ required: false })
+  @IsNotEmpty()
+  @IsString()
+  @IsOptional()
+  amenities?: string;
 }

@@ -17,9 +17,13 @@ import { UpdateHotelRoomBodyDto } from './dto/update-hotel-room.dto';
 import { HotelRoomStatus } from '../enum/hotel-room.status';
 import { HotelRoomDataInterface } from './interface/hotel-room.interface';
 import { BookingEntity } from '../database/booking.entity';
-import { HotelBookingStatus } from '../enum/hotel.booking.status';
 import { HotelRoomQueryParamsDto } from './dto/hotel-room-query.dto';
 import { LoggerService } from '../logger/logger.service';
+import {
+  ACTIVE_BOOKING_STATUSES,
+  parseAmenitiesFilter,
+  roomOverlapsBookingCondition,
+} from '../helper/room-availability.helper';
 
 @Injectable()
 export class HotelRoomService {
@@ -84,7 +88,7 @@ export class HotelRoomService {
   }
 
   async findAllHotelRooms(
-    param: HotelRoomBodyParamsDto,
+    param: HotelRoomBodyParamsDto | undefined,
     query: HotelRoomQueryParamsDto,
   ): Promise<HotelRoomDataInterface[]> {
     try {
@@ -100,96 +104,90 @@ export class HotelRoomService {
         }
       }
 
-      if (query.checkInDate && query.checkOutDate) {
-        const hotelRooms = await this.hotelRoomRepository
-          .createQueryBuilder('hr')
-          .leftJoinAndSelect('hr.hotel', 'h')
-          .where('hr.deletedAt IS NULL')
-          .andWhere('hr.status = :status', {
-            status: HotelRoomStatus.AVAILABLE,
-          })
-          .getMany();
+      const roomsQuery = this.hotelRoomRepository
+        .createQueryBuilder('hr')
+        .leftJoinAndSelect('hr.hotel', 'h')
+        .where('hr.deletedAt IS NULL')
+        .andWhere('hr.status = :status', {
+          status: HotelRoomStatus.AVAILABLE,
+        });
 
-        if (!hotelRooms.length) return [];
+      if (param?.ids?.length) {
+        roomsQuery.andWhere('hr.id IN (:...ids)', { ids: param.ids });
+      }
+
+      if (query.hotel_id?.length) {
+        roomsQuery.andWhere('h.id IN (:...hotelIds)', {
+          hotelIds: query.hotel_id,
+        });
       }
 
       if (query.guestNumber) {
-        const hotelRoom = await this.hotelRoomRepository
-          .createQueryBuilder('hr')
-          .where('hr.capacity >= :capacity', { capacity: query.guestNumber })
-          .andWhere('hr.deletedAt IS NULL')
-          .andWhere('hr.status = :status', {
-            status: HotelRoomStatus.AVAILABLE,
-          })
-          .getMany();
-
-        if (!hotelRoom.length) return [];
-
-        param.ids = hotelRoom.map((item) => item.id);
+        roomsQuery.andWhere('hr.capacity >= :capacity', {
+          capacity: query.guestNumber,
+        });
       }
 
-      if (query.roomCount) {
-        const hotelRoom = await this.hotelRoomRepository
-          .createQueryBuilder('hr')
-          .where('hr.rooms >= :rooms', { rooms: query.roomCount })
-          .andWhere('hr.deletedAt IS NULL')
-          .andWhere('hr.status = :status', {
-            status: HotelRoomStatus.AVAILABLE,
-          })
-          .getMany();
-
-        if (!hotelRoom.length) return [];
-
-        param.ids = hotelRoom.map((item) => item.id);
+      if (query.price) {
+        roomsQuery.andWhere('hr.price <= :price', { price: query.price });
       }
 
-      const hotelRooms = await this.hotelRoomRepository
-        .createQueryBuilder('hr')
-        .leftJoinAndSelect('hr.hotel', 'h')
-        .whereInIds(param.ids)
-        .andWhere('hr.status = :status', {
-          status: HotelRoomStatus.AVAILABLE,
-        })
-        .andWhere('hr.deletedAt IS NULL')
-        .getMany();
+      if (query.amenities) {
+        roomsQuery.andWhere('hr.amenities::text[] @> :amenities::text[]', {
+          amenities: parseAmenitiesFilter(query.amenities),
+        });
+      }
+
+      if (query.checkInDate && query.checkOutDate) {
+        roomsQuery.andWhere(roomOverlapsBookingCondition('hr'), {
+          activeStatuses: ACTIVE_BOOKING_STATUSES,
+          checkInDate: query.checkInDate,
+          checkOutDate: query.checkOutDate,
+        });
+      }
+
+      const hotelRooms = await roomsQuery.getMany();
 
       if (!hotelRooms.length) {
         return [];
       }
 
-      const activeBookings = await this.bookingRepository
-        .createQueryBuilder('hb')
-        .select('hb.hotel_room_id', 'hotelRoomId')
-        .where('hb.hotel_room_id IN (:...ids)', {
-          ids: hotelRooms.map((item) => item.id),
-        })
-        .andWhere('hb.status IN (:...status)', {
-          status: [
-            HotelBookingStatus.BOOKED,
-            HotelBookingStatus.AWAITING_PAYMENT,
-            HotelBookingStatus.AWAITING_CONFIRMATION,
-            HotelBookingStatus.CONFIRMED,
-          ],
-        })
-        .getRawMany();
+      // Date range already handled precisely by the NOT EXISTS overlap
+      // check above; a blanket "any active booking" exclusion here would
+      // wrongly hide rooms that are booked on unrelated dates.
+      let availableRooms = hotelRooms;
 
-      const bookedRoomIds = new Set(activeBookings.map((b) => b.hotelRoomId));
+      if (!(query.checkInDate && query.checkOutDate)) {
+        const activeBookings = await this.bookingRepository
+          .createQueryBuilder('hb')
+          .select('hb.hotel_room_id', 'hotelRoomId')
+          .where('hb.hotel_room_id IN (:...ids)', {
+            ids: hotelRooms.map((item) => item.id),
+          })
+          .andWhere('hb.status IN (:...status)', {
+            status: ACTIVE_BOOKING_STATUSES,
+          })
+          .getRawMany();
 
-      return hotelRooms
-        .filter((room) => !bookedRoomIds.has(room.id))
-        .map((room) => ({
-          id: room.id,
-          hotel_id: room.hotel?.id || '',
-          name: room.name,
-          description: room.description,
-          image: room.image,
-          price: room.price,
-          capacity: room.capacity,
-          status: room.status,
-          policies: room.policies,
-          amenities: room.amenities,
-          type: room.type,
-        }));
+        const bookedRoomIds = new Set(activeBookings.map((b) => b.hotelRoomId));
+        availableRooms = hotelRooms.filter(
+          (room) => !bookedRoomIds.has(room.id),
+        );
+      }
+
+      return availableRooms.map((room) => ({
+        id: room.id,
+        hotel_id: room.hotel?.id || '',
+        name: room.name,
+        description: room.description,
+        image: room.image,
+        price: room.price,
+        capacity: room.capacity,
+        status: room.status,
+        policies: room.policies,
+        amenities: room.amenities,
+        type: room.type,
+      }));
     } catch (error: any) {
       this.loggerService.error({
         service: HotelRoomService.name,
