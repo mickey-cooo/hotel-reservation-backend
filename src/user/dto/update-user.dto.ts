@@ -1,28 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Max, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { AddressDto } from './address.dto';
+import { UserNameDto } from './user-name.dto';
 import { Type } from 'class-transformer';
-
-export interface UserNameDto {
-  th: string;
-  en: string;
-}
 
 export class UpdateBodyUserDto {
   @ApiProperty()
   @IsNotEmpty()
-  @IsString()
+  @ValidateNested()
+  @Type(() => UserNameDto)
   firstName: UserNameDto;
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsString()
+  @ValidateNested()
+  @Type(() => UserNameDto)
   lastName: UserNameDto;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  @Max(10)
+  @MaxLength(10)
   phoneNumber: string;
 
   @ApiProperty()
