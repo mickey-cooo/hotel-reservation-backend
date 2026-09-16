@@ -56,6 +56,7 @@ AGENTS.md
 CLAUDE.md
 .claude/
 .cursor/
+.agents/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
