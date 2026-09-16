@@ -5,18 +5,25 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HotelEntity } from '../database/hotel.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
 import { CommonStatus } from '../enum/common.status';
 import { ParamHotelDto, QueryHotelDto } from './dto/hotel-params.dto';
+import { HotelRoomStatus } from '../enum/hotel-room.status';
 import { AddressService } from '../address/address.service';
 import { AddressInterface } from '../address/interface/address.interface';
 import { UpdateHotelBodyDto } from './dto/update-hotel.dto';
 import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.interface';
 import { PaginationService } from '../pagination/pagination.service';
 import { LoggerService } from '../logger/logger.service';
+import {
+  ACTIVE_BOOKING_STATUSES,
+  parseAmenitiesFilter,
+  roomOverlapsBookingCondition,
+} from '../helper/room-availability.helper';
+import { PaginatedResult } from '../pagination/interface/pagination.interface';
 
 @Injectable()
 export class HotelService {
@@ -137,41 +144,120 @@ export class HotelService {
     }
   }
 
-  async findAllHotel(query: QueryHotelDto) {
+  private applyHotelSearchFilters(
+    qb: SelectQueryBuilder<HotelEntity>,
+    query: QueryHotelDto,
+  ): void {
+    qb.andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
+      .andWhere('r.deletedAt IS NULL')
+      .andWhere('a.deletedAt IS NULL');
+
+    if (query.ids?.length) {
+      qb.andWhere('h.id IN (:...filterIds)', { filterIds: query.ids });
+    }
+
+    if (query.category) {
+      qb.andWhere('h.category = :category', { category: query.category });
+    }
+
+    if (query.price) {
+      qb.andWhere('r.price <= :price', { price: query.price });
+    }
+
+    if (query.rating) {
+      qb.andWhere(
+        `h.id IN (
+          SELECT rv.hotel_id FROM hotel_review rv
+          WHERE rv."deletedAt" IS NULL
+          GROUP BY rv.hotel_id
+          HAVING AVG(rv.rating) >= :rating
+        )`,
+        { rating: query.rating },
+      );
+    }
+
+    if (query.amenities) {
+      qb.andWhere('r.amenities::text[] @> :amenities::text[]', {
+        amenities: parseAmenitiesFilter(query.amenities),
+      });
+    }
+
+    if (query.name) {
+      qb.andWhere('h.name LIKE :name', { name: `%${query.name}%` });
+    }
+
+    if (query.guests?.length) {
+      const guestCapacity = query.guests.reduce(
+        (sum, guest) => sum + guest.count,
+        0,
+      );
+      qb.andWhere('r.capacity >= :guestCapacity', { guestCapacity });
+    }
+
+    if (query.rooms) {
+      qb.andWhere(
+        `(
+          SELECT COUNT(*) FROM hotel_room hr2
+          WHERE hr2.hotel_id = h.id
+            AND hr2."deletedAt" IS NULL
+            AND hr2.status = :roomAvailableStatus
+        ) >= :roomsCount`,
+        {
+          roomAvailableStatus: HotelRoomStatus.AVAILABLE,
+          roomsCount: query.rooms,
+        },
+      );
+    }
+
+    if (query.checkInDate && query.checkOutDate) {
+      qb.andWhere('r.status = :roomStatus', {
+        roomStatus: HotelRoomStatus.AVAILABLE,
+      }).andWhere(roomOverlapsBookingCondition('r'), {
+        activeStatuses: ACTIVE_BOOKING_STATUSES,
+        checkInDate: query.checkInDate,
+        checkOutDate: query.checkOutDate,
+      });
+    }
+  }
+
+  async findAllHotel(
+    query: QueryHotelDto,
+  ): Promise<PaginatedResult<HotelEntity>> {
     try {
-      const hotel = this.hotelRepository
+      const idQuery = this.hotelRepository
         .createQueryBuilder('h')
-        .innerJoinAndSelect('h.rooms', 'r')
-        .innerJoinAndSelect('h.address', 'a')
-        .andWhere('h.status = :status', { status: CommonStatus.ACTIVE })
-        .andWhere('r.deletedAt IS NULL')
-        .andWhere('a.deletedAt IS NULL');
+        .leftJoin('h.rooms', 'r')
+        .leftJoin('h.address', 'a')
+        .distinct(true)
+        .orderBy('h.createdAt', 'DESC');
+      this.applyHotelSearchFilters(idQuery, query);
 
-      if (query.category) {
-        hotel.andWhere('h.category = :category', {
-          category: query.category,
-        });
+      const page = await this.paginationService.paginate(query, idQuery);
+
+      const pageIds = page.data.map((item) => item.id);
+      if (!pageIds.length) {
+        return { ...page, data: [] };
       }
 
-      if (query.price) {
-        hotel.andWhere('h.price <= :price', {
-          price: query.price,
-        });
-      }
+      // Re-hydrate with full relations, reapplying the same filters so
+      // `rooms` only contains the rooms that actually matched the search
+      // instead of every room the hotel has.
+      const hydrationQuery = this.hotelRepository
+        .createQueryBuilder('h')
+        .leftJoinAndSelect('h.rooms', 'r')
+        .leftJoinAndSelect('h.address', 'a')
+        .andWhere('h.id IN (:...pageIds)', { pageIds });
+      this.applyHotelSearchFilters(hydrationQuery, query);
 
-      if (query.rating) {
-        hotel.andWhere('h.rating >= :rating', {
-          rating: query.rating,
-        });
-      }
+      const hotels = await hydrationQuery.getMany();
+      const hotelById = new Map(hotels.map((item) => [item.id, item]));
 
-      if (query.amenities) {
-        hotel.andWhere('h.amenities LIKE :amenities', {
-          amenities: `%${query.amenities}%`,
-        });
-      }
-
-      return await this.paginationService.paginate(query, hotel);
+      return {
+        ...page,
+        data: pageIds
+          .map((id) => hotelById.get(id))
+          .filter((item): item is HotelEntity => !!item),
+      };
     } catch (error: any) {
       this.loggerService.error({
         service: HotelService.name,
