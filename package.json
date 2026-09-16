@@ -5,6 +5,12 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "resolutions": {
+    "multer": "^2.3.0",
+    "qs": "^6.16.0",
+    "fast-uri": "^3.1.5",
+    "js-yaml": "^5.2.2"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
