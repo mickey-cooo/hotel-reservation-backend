@@ -9,6 +9,7 @@ import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateHotelBodyDto } from './dto/create-hotel.dto';
 import { HotelRoomService } from '../hotel-room/hotel-room.service';
 import { HotelRoomEntity } from '../database/hotel-room.entity';
+import { HotelReviewEntity } from '../database/hotel-review.entity';
 import { CommonStatus } from '../enum/common.status';
 import { ParamHotelDto, QueryHotelDto } from './dto/hotel-params.dto';
 import { HotelRoomStatus } from '../enum/hotel-room.status';
@@ -19,9 +20,8 @@ import { HotelRoomDataInterface } from '../hotel-room/interface/hotel-room.inter
 import { PaginationService } from '../pagination/pagination.service';
 import { LoggerService } from '../logger/logger.service';
 import {
-  ACTIVE_BOOKING_STATUSES,
   parseAmenitiesFilter,
-  roomOverlapsBookingCondition,
+  excludeRoomsWithOverlappingBooking,
 } from '../helper/room-availability.helper';
 import { PaginatedResult } from '../pagination/interface/pagination.interface';
 
@@ -166,12 +166,17 @@ export class HotelService {
 
     if (query.rating) {
       qb.andWhere(
-        `h.id IN (
-          SELECT rv.hotel_id FROM hotel_review rv
-          WHERE rv."deletedAt" IS NULL
-          GROUP BY rv.hotel_id
-          HAVING AVG(rv.rating) >= :rating
-        )`,
+        (sub) => {
+          const subQuery = sub
+            .subQuery()
+            .select('review.hotel')
+            .from(HotelReviewEntity, 'review')
+            .where('review.deletedAt IS NULL')
+            .groupBy('review.hotel')
+            .having('AVG(review.rating) >= :rating')
+            .getQuery();
+          return `h.id IN ${subQuery}`;
+        },
         { rating: query.rating },
       );
     }
@@ -196,12 +201,17 @@ export class HotelService {
 
     if (query.rooms) {
       qb.andWhere(
-        `(
-          SELECT COUNT(*) FROM hotel_room hr2
-          WHERE hr2.hotel_id = h.id
-            AND hr2."deletedAt" IS NULL
-            AND hr2.status = :roomAvailableStatus
-        ) >= :roomsCount`,
+        (sub) => {
+          const subQuery = sub
+            .subQuery()
+            .select('COUNT(*)')
+            .from(HotelRoomEntity, 'hr2')
+            .where('hr2.hotel = h.id')
+            .andWhere('hr2.deletedAt IS NULL')
+            .andWhere('hr2.status = :roomAvailableStatus')
+            .getQuery();
+          return `(${subQuery}) >= :roomsCount`;
+        },
         {
           roomAvailableStatus: HotelRoomStatus.AVAILABLE,
           roomsCount: query.rooms,
@@ -212,8 +222,8 @@ export class HotelService {
     if (query.checkInDate && query.checkOutDate) {
       qb.andWhere('r.status = :roomStatus', {
         roomStatus: HotelRoomStatus.AVAILABLE,
-      }).andWhere(roomOverlapsBookingCondition('r'), {
-        activeStatuses: ACTIVE_BOOKING_STATUSES,
+      });
+      excludeRoomsWithOverlappingBooking(qb, 'r', {
         checkInDate: query.checkInDate,
         checkOutDate: query.checkOutDate,
       });

@@ -22,7 +22,7 @@ import { LoggerService } from '../logger/logger.service';
 import {
   ACTIVE_BOOKING_STATUSES,
   parseAmenitiesFilter,
-  roomOverlapsBookingCondition,
+  excludeRoomsWithOverlappingBooking,
 } from '../helper/room-availability.helper';
 
 @Injectable()
@@ -139,8 +139,7 @@ export class HotelRoomService {
       }
 
       if (query.checkInDate && query.checkOutDate) {
-        roomsQuery.andWhere(roomOverlapsBookingCondition('hr'), {
-          activeStatuses: ACTIVE_BOOKING_STATUSES,
+        excludeRoomsWithOverlappingBooking(roomsQuery, 'hr', {
           checkInDate: query.checkInDate,
           checkOutDate: query.checkOutDate,
         });
