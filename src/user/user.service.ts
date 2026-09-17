@@ -336,8 +336,6 @@ export class UserService {
       }
 
       const hashedPassword = await bcrypt.hash(body.password, 10);
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
       const newUser = await this.userRepository
         .createQueryBuilder()
@@ -346,9 +344,7 @@ export class UserService {
         .values({
           email: body.email,
           password: hashedPassword,
-          otpCode: otp,
-          otpExpiresAt,
-          status: CommonStatus.INACTIVE,
+          status: CommonStatus.ACTIVE,
         })
         .returning('*')
         .execute();
@@ -357,10 +353,8 @@ export class UserService {
         throw new BadRequestException('Failed to create user');
       }
 
-      await this.mailService.sendOtp(body.email, otp);
-
       return {
-        message: 'User registered successfully. Please verify your email.',
+        message: 'User registered successfully',
         data: null,
       };
     } catch (error: any) {
